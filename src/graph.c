@@ -55,20 +55,25 @@ void draw_grid(Camera2D camera, float scale)
     float font_size = 20.0f / camera.zoom;
     float offset    = font_size * 0.3f;
 
-    // X-axis labels: math value i drawn at world (i*scale, offset)
+    Color grid_color = (Color){ 200, 200, 200, 255 }; // light gray
+
+    // vertical lines + X-axis labels
     int x_start = (int)floorf(tl.x / scale / grid_step) * grid_step;
     int x_end   = (int)ceilf (br.x / scale / grid_step) * grid_step;
     for (int i = x_start; i <= x_end; i += grid_step) {
+        if (i != 0)
+            DrawLine(i * scale, (int)tl.y, i * scale, (int)br.y, grid_color);
         DrawText(TextFormat("%d", i), i * scale + offset, offset, font_size, DARKGRAY);
     }
 
-    // Y-axis labels: math value i drawn at world (offset, -i*scale)
-    // visible math-Y: top = -tl.y/scale, bottom = -br.y/scale
+    // horizontal lines + Y-axis labels
     int y_start = (int)floorf(-br.y / scale / grid_step) * grid_step;
     int y_end   = (int)ceilf (-tl.y / scale / grid_step) * grid_step;
     for (int i = y_start; i <= y_end; i += grid_step) {
-        if (i == 0) continue;
-        DrawText(TextFormat("%d", i), offset, -i * scale + offset, font_size, DARKGRAY);
+        if (i != 0)
+            DrawLine((int)tl.x, -i * scale, (int)br.x, -i * scale, grid_color);
+        if (i != 0)
+            DrawText(TextFormat("%d", i), offset, -i * scale + offset, font_size, DARKGRAY);
     }
 }
 
@@ -90,15 +95,28 @@ void draw_function(Token *postfix, Camera2D camera, float scale)
     float step    = 1.0f / (camera.zoom * scale);
     if (step <= 0) step = 0.01f;
 
+    // visible world-Y range (top has smaller world-Y because Y axis is flipped)
+    Vector2 screen_tl = GetScreenToWorld2D((Vector2){0,                0                 }, camera);
+    Vector2 screen_br = GetScreenToWorld2D((Vector2){GetScreenWidth(), GetScreenHeight() }, camera);
+    float world_y_min = screen_tl.y;
+    float world_y_max = screen_br.y;
+
     float  prev_x = start_x;
     double prev_y = evaluate_postfix(postfix, prev_x);
 
     for (float x = start_x + step; x <= end_x; x += step) {
         double y = evaluate_postfix(postfix, x);
         if (!isnan(y) && !isnan(prev_y)) {
-            Vector2 p0 = { prev_x * scale, (float)-prev_y * scale };
-            Vector2 p1 = { x      * scale, (float)-y      * scale };
-            DrawLineEx(p0, p1, 2.0f / camera.zoom, RED);
+            float wy0 = (float)-prev_y * scale;
+            float wy1 = (float)-y      * scale;
+            // skip segment only if both endpoints are outside the same side
+            bool both_above = wy0 < world_y_min && wy1 < world_y_min;
+            bool both_below = wy0 > world_y_max && wy1 > world_y_max;
+            if (!both_above && !both_below) {
+                Vector2 p0 = { prev_x * scale, wy0 };
+                Vector2 p1 = { x      * scale, wy1 };
+                DrawLineEx(p0, p1, 2.0f / camera.zoom, RED);
+            }
         }
         prev_x = x;
         prev_y = y;

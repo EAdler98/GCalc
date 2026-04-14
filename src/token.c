@@ -11,6 +11,18 @@ Token *tokenizer(char *input)
     char *ptr = input;
     while (*ptr)
     {
+        // implicit multiplication: 2x, 2(x+1), (a)(b)
+        // must run first, before isalpha/isdigit consume the current char
+        if (i > 0) {
+            TokenType prev = res[i-1].type;
+            bool prev_can_multiply = (prev == TOKEN_NUMBER || prev == TOKEN_VARIABLE || prev == TOKEN_RPAREN);
+            bool curr_starts_group = (isalpha(*ptr) || *ptr == '(');
+            if (prev_can_multiply && curr_starts_group) {
+                res[i].type   = TOKEN_OPERATOR;
+                res[i].symbol = '*';
+                i++;
+            }
+        }
         if (isalpha(*ptr))
         {
             res[i].type   = TOKEN_VARIABLE;
@@ -35,17 +47,6 @@ Token *tokenizer(char *input)
             {
                 free(res);
                 return NULL;
-            }
-        }
-        // implicit multiplication: 2x, 2(x+1), (a)(b)
-        if (i > 0) {
-            TokenType prev = res[i-1].type;
-            bool prev_can_multiply  = (prev == TOKEN_NUMBER || prev == TOKEN_VARIABLE || prev == TOKEN_RPAREN);
-            bool curr_starts_group  = (isalpha(*ptr) || *ptr == '(');
-            if (prev_can_multiply && curr_starts_group) {
-                res[i].type   = TOKEN_OPERATOR;
-                res[i].symbol = '*';
-                i++;
             }
         }
         switch (*ptr)

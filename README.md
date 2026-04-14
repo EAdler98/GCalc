@@ -11,7 +11,10 @@ Plot any mathematical expression in `x` with smooth zoom and pan.
 |---|---|
 | Scroll wheel | Zoom in / out (centered on cursor) |
 | Right / Middle drag | Pan |
+| F11 | Toggle fullscreen |
 | ESC | Quit |
+
+Type any expression in the textbox (bottom-left corner) and it updates the graph in real time.
 
 ---
 
@@ -82,6 +85,7 @@ The binary is placed in `bin/Debug/GCalc` (or `bin/Release/GCalc`).
 |---|---|
 | `src/main.c` | Window, camera init, main loop |
 | `src/graph.c/h` | Camera update, grid/axes/function rendering |
+| `src/ui.c/h` | Textbox widget |
 | `src/parser.c/h` | Shunting-yard infix → postfix + evaluator |
 | `src/token.c/h` | Lexer — tokenizes input strings |
 | `src/stack.c/h` | Token stack used by the parser |
@@ -95,3 +99,16 @@ x^2 + 2*x - 3
 ```
 
 Operators: `+`  `-`  `*`  `/`  `^`
+
+---
+
+## Tests
+
+Parser unit tests live in `tests/parser_tests.c` and have no dependency on raylib.
+
+```bash
+make test        # build + run
+./test_runner    # run directly
+```
+
+CI runs these automatically on every push via GitHub Actions.

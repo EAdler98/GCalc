@@ -1,70 +1,94 @@
-/*******************************************************************************************
- *
- *   raylib [core] example - basic window
- *
- *   Example complexity rating: [★☆☆☆] 1/4
- *
- *   Welcome to raylib!
- *
- *   To test examples, just press F6 and execute 'raylib_compile_execute' script
- *   Note that compiled executable is placed in the same folder as .c file
- *
- *   To test the examples on Web, press F6 and execute 'raylib_compile_execute_web' script
- *   Web version of the program is generated in the same folder as .c file
- *
- *   You can find all basic examples on C:\raylib\raylib\examples folder or
- *   raylib official webpage: www.raylib.com
- *
- *   Enjoy using raylib. :)
- *
- *   Example originally created with raylib 1.0, last time updated with raylib 1.0
- *
- *   Example licensed under an unmodified zlib/libpng license, which is an OSI-certified,
- *   BSD-like license that allows static linking with closed source software
- *
- *   Copyright (c) 2013-2025 Ramon Santamaria (@raysan5)
- *
- ********************************************************************************************/
-
 #include "raylib.h"
 #include "parser.h"
 #include "graph.h"
+#include "ui.h"
 #include <stdlib.h>
+#include <string.h>
 
-const int   screenWidth  = 1920;
-const int   screenHeight = 1080;
-const float SCALE        = 20.0f;
+int screenWidth = 1920;
+int screenHeight = 1080;
+const float SCALE = 20.0f;
+int currentFPS = 60;
 int main(void)
 {
-    
-
     Token *tokens = parse("x^2 + 2*x - 3");
-
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(screenWidth, screenHeight, "GCalc");
     SetWindowFocused();
-    SetTargetFPS(60);
+    SetTargetFPS(30);
 
-    Camera2D camera  = {0};
-    camera.offset    = (Vector2){ screenWidth / 2.0f, screenHeight / 2.0f };
-    camera.zoom      = 1.0f;
+    Camera2D camera = {0};
+    camera.offset = (Vector2){screenWidth / 2.0f, screenHeight / 2.0f};
+    camera.zoom = 1.0f;
     Vector2 target_pos = camera.target;
     float target_zoom = camera.zoom;
+    float idleTimer;
+    Textbox tb = {0};
+    strncpy(tb.text, "x^2 + 2*x - 3", TEXTBOX_MAX - 1);
+    tb.len = strlen(tb.text);
+
+    // to load a custom font:
+    //   tb.font = LoadFontEx("resources/myfont.ttf", 32, NULL, 0);
+    //   tb.font_size = 22;
+    Rectangle tb_bounds = {10, screenHeight - 46, 320, 36};
 
     while (!WindowShouldClose())
     {
+
+        // re-parse when user submits a new expression
+        bool isTextBoxActive = textbox_update(&tb, tb_bounds);
+        if (isTextBoxActive)
+        {
+            free(tokens);
+            tokens = parse(tb.text);
+        }
+        Vector2 mouseDelta = GetMouseDelta();
+        float wheel = GetMouseWheelMove();
+        int keyPressed = GetKeyPressed();
+        
+
+        // (נוסיף גם בדיקה אם תיבת הטקסט לחוצה, כדי שהסמן יהבהב בצורה חלקה)
+        bool isUserActive = (IsMouseButtonDown(MOUSE_BUTTON_LEFT)||IsMouseButtonDown(MOUSE_BUTTON_RIGHT)||wheel != 0 || keyPressed != 0 || isTextBoxActive);
+
+        // 2. עדכון הטיימר וה-FPS
+        if (isUserActive)
+        {
+            idleTimer = 0.0f; // איפוס הטיימר
+            if (currentFPS != 60)
+            {
+                currentFPS = 60;
+                SetTargetFPS(currentFPS); // מתעוררים!
+            }
+        }
+        else
+        {
+            idleTimer += GetFrameTime(); // הוספת הזמן שעבר מאז הפריים הקודם
+
+            // אם עברו 2 שניות בלי תזוזה, נכנסים למצב שינה
+            if (idleTimer > 1.0f && currentFPS != 15)
+            {
+                currentFPS = 5;
+                SetTargetFPS(currentFPS); // הולכים לישון
+            }
+        }
+
         update_camera_smooth(&camera, &target_pos, &target_zoom);
 
         BeginDrawing();
-            ClearBackground(RAYWHITE);
-            BeginMode2D(camera);
-                draw_grid(camera, SCALE);
-                draw_axes(camera);
-                draw_function(tokens, camera, SCALE);
-            EndMode2D();
-            DrawText(TextFormat("Zoom: %.2f",    camera.zoom),     10, 10, 20, DARKGRAY);
-            DrawText(TextFormat("Target: %.1f, %.1f", camera.target.x, camera.target.y), 10, 40, 20, DARKGRAY);
-            DrawText(TextFormat("Offset: %.1f, %.1f", camera.offset.x, camera.offset.y), 10, 60, 20, DARKGRAY);
+        ClearBackground(RAYWHITE);
+        BeginMode2D(camera);
+        draw_grid(camera, SCALE);
+        draw_axes(camera);
+        if (tokens)
+            draw_function(tokens, camera, SCALE);
+        EndMode2D();
+        textbox_draw(&tb, tb_bounds);
+        DrawText(TextFormat("Zoom: %.2f", camera.zoom), 10, 10, 18, DARKGRAY);
         EndDrawing();
+        if (IsKeyPressed(KEY_F11))
+        {
+            ToggleFullscreen();
+        }
     }
 
     free(tokens);
