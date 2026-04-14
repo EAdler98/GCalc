@@ -55,8 +55,18 @@ Token *tokenizer(char *input)
         case ' ':
         case '\t':
             break;
-        case '+':
         case '-':
+            // unary minus: insert implicit 0 when '-' starts an expression or follows an operator/'('
+            if (i == 0 || res[i-1].type == TOKEN_OPERATOR || res[i-1].type == TOKEN_LPAREN) {
+                res[i].type  = TOKEN_NUMBER;
+                res[i].value = 0.0;
+                i++;
+            }
+            res[i].type   = TOKEN_OPERATOR;
+            res[i].symbol = '-';
+            i++;
+            break;
+        case '+':
         case '*':
         case '/':
         case '^':

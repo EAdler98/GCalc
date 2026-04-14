@@ -194,6 +194,25 @@ int main()
     run_test("10 / 2 * 5", expected_div_mult, "Left-to-Right Associativity (10 / 2 * 5)");
 
     // ---------------------------------------------------------
+    // טסט 6: מינוס אונרי (-x^2 + 3)
+    // הלקסר מתייחס ל-'-' כאופרטור בינארי, ולכן הפוסטפיקס הוא:
+    // x 2 ^ - 3 +
+    // ---------------------------------------------------------
+    // Tokenizer inserts '0' before unary '-', so '-x^2 + 3' becomes '0 - x^2 + 3'.
+    // Postfix: 0 x 2 ^ - 3 +
+    Token expected_unary[] = {
+        {TOKEN_NUMBER,   0.0,  0 },
+        {TOKEN_VARIABLE, 0.0, 'x'},
+        {TOKEN_NUMBER,   2.0,  0 },
+        {TOKEN_OPERATOR, 0.0, '^'},
+        {TOKEN_OPERATOR, 0.0, '-'},
+        {TOKEN_NUMBER,   3.0,  0 },
+        {TOKEN_OPERATOR, 0.0, '+'},
+        {TOKEN_EOF,      0.0,  0 }
+    };
+    run_test("-x^2 + 3", expected_unary, "Unary minus (-x^2 + 3) postfix shape");
+
+    // ---------------------------------------------------------
     // evaluate_postfix tests
     // ---------------------------------------------------------
     printf("\n=== RUNNING EVALUATE_POSTFIX TESTS ===\n\n");
@@ -221,6 +240,11 @@ int main()
     assert_evaluate("x - 5",    2, -3.0, "Eval: negative result");
     assert_evaluate("x / 2",    3, 1.5,  "Eval: fractional result");
     assert_evaluate("(x+1)(x-1)", 3, 8.0, "Eval: (x+1)(x-1) at x=3");
+
+    // Unary minus: -x^2 + 3 at x=2 → -(2^2)+3 = -1
+    assert_evaluate("-x^2 + 3", 2,  -1.0, "Eval: unary minus -x^2+3 at x=2");
+    assert_evaluate("-x^2 + 3", 0,   3.0, "Eval: unary minus -x^2+3 at x=0");
+    assert_evaluate("-x^2 + 3", 1,   2.0, "Eval: unary minus -x^2+3 at x=1");
 
     // Malformed expressions must return NAN, not garbage
     assert_evaluate("x^2 + 2*x - 3^", 2, NAN, "Eval: trailing operator -> NAN");
