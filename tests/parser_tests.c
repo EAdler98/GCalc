@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "token.h"
 #include "parser.h"
 
@@ -79,6 +80,42 @@ void run_test(char *input, Token *expected, const char *test_name)
     free(actual_postfix);
 }
 
+// ---- evaluate_postfix helpers ----------------------------------------
+
+void assert_evaluate(const char *expr, double x, double expected, const char *test_name)
+{
+    Token *postfix = parse((char *)expr);
+    if (!postfix)
+    {
+        printf("❌ [FAILED] %s (parse returned NULL)\n", test_name);
+        exit(1);
+    }
+
+    double result = evaluate_postfix(postfix, x);
+    free(postfix);
+
+    // NAN case: both must be NAN
+    if (isnan(expected))
+    {
+        if (!isnan(result))
+        {
+            printf("❌ [FAILED] %s: expected NAN but got %g\n", test_name, result);
+            exit(1);
+        }
+        printf("✅ [PASSED] %s\n", test_name);
+        return;
+    }
+
+    if (fabs(result - expected) > 1e-9)
+    {
+        printf("❌ [FAILED] %s: expected %g but got %g\n", test_name, expected, result);
+        exit(1);
+    }
+    printf("✅ [PASSED] %s\n", test_name);
+}
+
+// ---- main ------------------------------------------------------------
+
 int main()
 {
     printf("=== RUNNING AUTOMATED PARSER TESTS ===\n\n");
@@ -156,7 +193,34 @@ int main()
         {TOKEN_EOF, 0.0, 0}};
     run_test("10 / 2 * 5", expected_div_mult, "Left-to-Right Associativity (10 / 2 * 5)");
 
-    // ... (כאן אפשר להוסיף עוד ועוד טסטים) ...
+    // ---------------------------------------------------------
+    // evaluate_postfix tests
+    // ---------------------------------------------------------
+    printf("\n=== RUNNING EVALUATE_POSTFIX TESTS ===\n\n");
+
+    // Basic operators (x irrelevant)
+    assert_evaluate("3 + 4",    0, 7.0,  "Eval: addition");
+    assert_evaluate("10 - 3",   0, 7.0,  "Eval: subtraction");
+    assert_evaluate("3 * 4",    0, 12.0, "Eval: multiplication");
+    assert_evaluate("10 / 2",   0, 5.0,  "Eval: division");
+    assert_evaluate("2 ^ 3",    0, 8.0,  "Eval: power");
+
+    // Variable substitution
+    assert_evaluate("x",        3, 3.0,  "Eval: variable x");
+    assert_evaluate("x + 1",    5, 6.0,  "Eval: x + 1 at x=5");
+    assert_evaluate("2x",       5, 10.0, "Eval: implicit mult 2x at x=5");
+
+    // Quadratic x^2 + 2x - 3  (roots at x=1 and x=-3)
+    assert_evaluate("x^2 + 2x - 3", 1,  0.0,  "Eval: quadratic root x=1");
+    assert_evaluate("x^2 + 2x - 3", -3, 0.0,  "Eval: quadratic root x=-3");
+    assert_evaluate("x^2 + 2x - 3", 0, -3.0,  "Eval: quadratic at x=0");
+    assert_evaluate("x^2 + 2x - 3", 2,  5.0,  "Eval: quadratic at x=2");
+
+    // Edge cases
+    assert_evaluate("1 / 0",    0, NAN,  "Eval: division by zero -> NAN");
+    assert_evaluate("x - 5",    2, -3.0, "Eval: negative result");
+    assert_evaluate("x / 2",    3, 1.5,  "Eval: fractional result");
+    assert_evaluate("(x+1)(x-1)", 3, 8.0, "Eval: (x+1)(x-1) at x=3");
 
     printf("\n=== ALL TESTS PASSED SUCCESSFULLY! ===\n");
 

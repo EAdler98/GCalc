@@ -6,7 +6,8 @@
 
 Token *tokenizer(char *input)
 {
-    Token *res = (Token *)calloc(strlen(input), sizeof(Token) + 1);
+    // Worst case: every character produces a token AND an implicit multiply.
+    Token *res = (Token *)calloc(2 * strlen(input) + 1, sizeof(Token));
     int i = 0;
     char *ptr = input;
     while (*ptr)
