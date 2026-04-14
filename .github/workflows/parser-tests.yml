@@ -23,7 +23,7 @@ jobs:
       run: cd build && chmod +x premake5 && ./premake5 gmake2 && cd ..
 
     - name: Build Tests
-      run: make test_runner
+      run: make -f GCalc.make test_runner
 
     - name: Run Tests
       run: ./test_runner
