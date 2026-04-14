@@ -20,11 +20,13 @@ int main(void)
     Function *f = calloc(2, sizeof(Function));
     f[0] = (Function){tokens1, RED};
     f[0].tb.text=text1;
-    f[0].tb.len=strlen(text1)+1;
+    f[0].tb.len=strlen(text1);
+    f[0].tb.cursor=f[0].tb.len;
     f[0].tb.font_size=22;
     f[1] = (Function){tokens2, BLUE};
     f[1].tb.text=text2;
-    f[1].tb.len=strlen(text2)+1;
+    f[1].tb.len=strlen(text2);
+    f[1].tb.cursor=f[1].tb.len;
     f[1].tb.font_size=22;
     int fcount = 2;
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
@@ -89,9 +91,9 @@ int main(void)
             idleTimer += GetFrameTime(); // הוספת הזמן שעבר מאז הפריים הקודם
 
             // אם עברו 2 שניות בלי תזוזה, נכנסים למצב שינה
-            if (idleTimer > 1.0f && currentFPS != 15)
+            if (idleTimer > 1.0f && currentFPS != 20)
             {
-                currentFPS = 5;
+                currentFPS = 20;
                 SetTargetFPS(currentFPS); // הולכים לישון
             }
         }

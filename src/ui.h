@@ -9,10 +9,11 @@
 typedef struct {
     char * text;
     int  len;
+    int  cursor;    // insertion point, 0..len
     bool active;
     int  font_size; // set to 0 to auto-fit the bounds height
     Font font;      // leave as (Font){0} to use the raylib default font
-} 
+}
 Textbox;
 
 // Returns true when the user submits (Enter key)
