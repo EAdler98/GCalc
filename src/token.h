@@ -1,5 +1,6 @@
 #ifndef TOKEN_H
 #define TOKEN_H
+#include "raylib.h"
 
 typedef enum {
     TOKEN_EOF,
@@ -17,6 +18,12 @@ typedef struct {
     char symbol;        // for operator ('+') or variable ('x')
     char funcName[3];   // for function ("sin")
 } Token;
+
+typedef struct {
+    Token * tokens;
+    Color color;       
+} Function;
+
 
 Token *tokenizer(char *input);
 

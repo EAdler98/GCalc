@@ -8,14 +8,19 @@
 int screenWidth = 1920;
 int screenHeight = 1080;
 const float SCALE = 20.0f;
-int currentFPS = 60;
+int currentFPS = 120;
 int main(void)
 {
-    Token *tokens = parse("x^2 + 2*x - 3");
+    Token *tokens1 = parse("x^2 + 2*x - 3");
+    Token *tokens2 = parse("-x^2 + 3");
+    Function * f=calloc(10,sizeof(Function));
+    f[0]=(Function){tokens1,RED};
+    f[1]=(Function){tokens2,BLUE};
+    int fcount=2;
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(screenWidth, screenHeight, "GCalc");
     SetWindowFocused();
-    //SetTargetFPS(30);
+    SetTargetFPS(currentFPS);
 
     Camera2D camera = {0};
     camera.offset = (Vector2){screenWidth / 2.0f, screenHeight / 2.0f};
@@ -35,13 +40,14 @@ int main(void)
     while (!WindowShouldClose())
     {
 
+        tb_bounds.y=GetScreenHeight()-46;
         // re-parse when user submits a new expression
         bool isTextBoxActive = textbox_update(&tb, tb_bounds);
-        if (isTextBoxActive)
-        {
-            free(tokens);
-            tokens = parse(tb.text);
-        }
+        // if (isTextBoxActive)
+        // {
+        //     free(tokens);
+        //     tokens = parse(tb.text);
+        // }
         Vector2 mouseDelta = GetMouseDelta();
         float wheel = GetMouseWheelMove();
         int keyPressed = GetKeyPressed();
@@ -57,7 +63,7 @@ int main(void)
             if (currentFPS != 60)
             {
                 currentFPS = 60;
-                //SetTargetFPS(currentFPS); // מתעוררים!
+                SetTargetFPS(currentFPS); // מתעוררים!
             }
         }
         else
@@ -68,7 +74,7 @@ int main(void)
             if (idleTimer > 1.0f && currentFPS != 15)
             {
                 currentFPS = 5;
-                //SetTargetFPS(currentFPS); // הולכים לישון
+                SetTargetFPS(currentFPS); // הולכים לישון
             }
         }
 
@@ -79,8 +85,11 @@ int main(void)
         BeginMode2D(camera);
         draw_grid(camera, SCALE);
         draw_axes(camera);
-        if (tokens)
-            draw_function(tokens, camera, SCALE);
+        Function * p =f;
+        for(int i=0;i<fcount;i++) 
+        {
+            draw_function(f[i],camera,SCALE);
+        }
         EndMode2D();
         textbox_draw(&tb, tb_bounds);
         DrawText(TextFormat("Zoom: %.2f", camera.zoom), 10, 10, 18, DARKGRAY);
@@ -91,7 +100,7 @@ int main(void)
         }
     }
 
-    free(tokens);
+    
     CloseWindow();
     return 0;
 }

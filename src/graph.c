@@ -86,7 +86,7 @@ void draw_axes(Camera2D camera)
     DrawLine(0, (int)tl.y, 0, (int)br.y, BLACK);
 }
 
-void draw_function(Token *postfix, Camera2D camera, float scale)
+void draw_function(Function f, Camera2D camera, float scale)
 {
     Vector2 left_edge  = GetScreenToWorld2D((Vector2){ 0,                0 }, camera);
     Vector2 right_edge = GetScreenToWorld2D((Vector2){ GetScreenWidth(), 0 }, camera);
@@ -103,10 +103,10 @@ void draw_function(Token *postfix, Camera2D camera, float scale)
     float world_y_max = screen_br.y;
 
     float  prev_x = start_x;
-    double prev_y = evaluate_postfix(postfix, prev_x);
+    double prev_y = evaluate_postfix(f.tokens, prev_x);
 
     for (float x = start_x + step; x <= end_x; x += step) {
-        double y = evaluate_postfix(postfix, x);
+        double y = evaluate_postfix(f.tokens, x);
         if (!isnan(y) && !isnan(prev_y)) {
             float wy0 = (float)-prev_y * scale;
             float wy1 = (float)-y      * scale;
@@ -116,7 +116,7 @@ void draw_function(Token *postfix, Camera2D camera, float scale)
             if (!both_above && !both_below) {
                 Vector2 p0 = { prev_x * scale, wy0 };
                 Vector2 p1 = { x      * scale, wy1 };
-                DrawLineEx(p0, p1, 2.0f / camera.zoom, RED);
+                DrawLineEx(p0, p1, 2.0f / camera.zoom, f.color);
             }
         }
         prev_x = x;
