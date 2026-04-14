@@ -7,12 +7,13 @@
 #define TEXTBOX_MAX 256
 
 typedef struct {
-    char text[TEXTBOX_MAX];
+    char * text;
     int  len;
     bool active;
     int  font_size; // set to 0 to auto-fit the bounds height
     Font font;      // leave as (Font){0} to use the raylib default font
-} Textbox;
+} 
+Textbox;
 
 // Returns true when the user submits (Enter key)
 bool textbox_update(Textbox *tb, Rectangle bounds);

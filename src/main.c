@@ -11,12 +11,22 @@ const float SCALE = 20.0f;
 int currentFPS = 120;
 int main(void)
 {
-    Token *tokens1 = parse("x^2 + 2*x - 3");
-    Token *tokens2 = parse("-x^2 + 3");
-    Function * f=calloc(10,sizeof(Function));
-    f[0]=(Function){tokens1,RED};
-    f[1]=(Function){tokens2,BLUE};
-    int fcount=2;
+    char * text1=calloc(256,sizeof(char));
+    strcpy(text1,"x^2 + 2*x - 3");
+    char * text2=calloc(256,sizeof(char));
+    strcpy(text2,"-x^2 +3");
+    Token *tokens1 = parse(text1);
+    Token *tokens2 = parse(text2);
+    Function *f = calloc(2, sizeof(Function));
+    f[0] = (Function){tokens1, RED};
+    f[0].tb.text=text1;
+    f[0].tb.len=strlen(text1)+1;
+    f[0].tb.font_size=22;
+    f[1] = (Function){tokens2, BLUE};
+    f[1].tb.text=text2;
+    f[1].tb.len=strlen(text2)+1;
+    f[1].tb.font_size=22;
+    int fcount = 2;
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(screenWidth, screenHeight, "GCalc");
     SetWindowFocused();
@@ -28,33 +38,41 @@ int main(void)
     Vector2 target_pos = camera.target;
     float target_zoom = camera.zoom;
     float idleTimer;
-    Textbox tb = {0};
-    strncpy(tb.text, "x^2 + 2*x - 3", TEXTBOX_MAX - 1);
-    tb.len = strlen(tb.text);
+    // Textbox tb = {0};
+    // strncpy(tb.text, "x^2 + 2*x - 3", TEXTBOX_MAX - 1);
+    // tb.len = strlen(tb.text);
 
     // to load a custom font:
     //   tb.font = LoadFontEx("resources/myfont.ttf", 32, NULL, 0);
     //   tb.font_size = 22;
-    Rectangle tb_bounds = {10, screenHeight - 46, 320, 36};
+
+    const int TB_X = 10, TB_W = 320, TB_H = 36, TB_MARGIN = 10, TB_PAD = 4;
 
     while (!WindowShouldClose())
     {
 
-        tb_bounds.y=GetScreenHeight()-46;
+        bool isTextBoxActive = false;
+        bool is_one_tb_active;
         // re-parse when user submits a new expression
-        bool isTextBoxActive = textbox_update(&tb, tb_bounds);
-        // if (isTextBoxActive)
-        // {
-        //     free(tokens);
-        //     tokens = parse(tb.text);
-        // }
+        
+        for (int i = 0; i < fcount; i++)
+        {
+            Rectangle b = { TB_X, GetScreenHeight() - TB_MARGIN - TB_H - i * (TB_H + TB_PAD), TB_W, TB_H };
+            is_one_tb_active = textbox_update(&f[i].tb, b);
+            isTextBoxActive |= is_one_tb_active;
+            if (is_one_tb_active)
+            {
+                free(f[i].tokens);
+                f[i].tokens = parse(f[i].tb.text);
+            }
+        }
+
         Vector2 mouseDelta = GetMouseDelta();
         float wheel = GetMouseWheelMove();
         int keyPressed = GetKeyPressed();
-        
 
         // (נוסיף גם בדיקה אם תיבת הטקסט לחוצה, כדי שהסמן יהבהב בצורה חלקה)
-        bool isUserActive = (IsMouseButtonDown(MOUSE_BUTTON_LEFT)||IsMouseButtonDown(MOUSE_BUTTON_RIGHT)||wheel != 0 || keyPressed != 0 || isTextBoxActive);
+        bool isUserActive = (IsMouseButtonDown(MOUSE_BUTTON_LEFT) || IsMouseButtonDown(MOUSE_BUTTON_RIGHT) || wheel != 0 || keyPressed != 0 || isTextBoxActive);
 
         // 2. עדכון הטיימר וה-FPS
         if (isUserActive)
@@ -85,13 +103,15 @@ int main(void)
         BeginMode2D(camera);
         draw_grid(camera, SCALE);
         draw_axes(camera);
-        Function * p =f;
-        for(int i=0;i<fcount;i++) 
+        Function *p = f;
+        for (int i = 0; i < fcount; i++)
         {
-            draw_function(f[i],camera,SCALE);
+            draw_function(f[i], camera, SCALE);
         }
         EndMode2D();
-        textbox_draw(&tb, tb_bounds);
+        Rectangle tb_start = { TB_X, GetScreenHeight() - TB_MARGIN - TB_H, TB_W, TB_H };
+        draw_functions(f, fcount, tb_start, TB_PAD);
+        
         DrawText(TextFormat("Zoom: %.2f", camera.zoom), 10, 10, 18, DARKGRAY);
         EndDrawing();
         if (IsKeyPressed(KEY_F11))
@@ -100,7 +120,6 @@ int main(void)
         }
     }
 
-    
     CloseWindow();
     return 0;
 }

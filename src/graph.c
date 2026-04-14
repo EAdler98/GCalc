@@ -86,6 +86,15 @@ void draw_axes(Camera2D camera)
     DrawLine(0, (int)tl.y, 0, (int)br.y, BLACK);
 }
 
+void draw_functions(Function *f, int count, Rectangle start, int padding)
+{
+    Rectangle b = start;
+    for (int i = 0; i < count; i++) {
+        textbox_draw(&f[i].tb, b);
+        b.y -= b.height + padding;  // stack upward
+    }
+}
+
 void draw_function(Function f, Camera2D camera, float scale)
 {
     Vector2 left_edge  = GetScreenToWorld2D((Vector2){ 0,                0 }, camera);
