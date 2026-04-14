@@ -2,6 +2,7 @@
 #include "raymath.h"
 #include <math.h>
 
+const float STEP_SCALE=5.0f; //The smaller the value, the smoother the functions are (slower performence). 
 void update_camera_smooth(Camera2D *camera, Vector2 *target_pos, float *target_zoom)
 {
     const float smooth = 0.1f;
@@ -92,7 +93,7 @@ void draw_function(Token *postfix, Camera2D camera, float scale)
 
     float start_x = left_edge.x  / scale;
     float end_x   = right_edge.x / scale;
-    float step    = 1.0f / (camera.zoom * scale);
+    float step    = STEP_SCALE / (camera.zoom * scale);
     if (step <= 0) step = 0.01f;
 
     // visible world-Y range (top has smaller world-Y because Y axis is flipped)

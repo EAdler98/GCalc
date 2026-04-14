@@ -72,6 +72,7 @@ double evaluate_postfix(Token *postfix, double x_value) {
         } else if (t.type == TOKEN_VARIABLE) {
             stack[++top] = x_value;
         } else if (t.type == TOKEN_OPERATOR) {
+            if (top < 1) return NAN; // not enough operands (e.g. trailing operator)
             double right = stack[top--];
             double left  = stack[top--];
             switch (t.symbol) {
@@ -86,6 +87,7 @@ double evaluate_postfix(Token *postfix, double x_value) {
             }
         }
     }
+    if (top != 0) return NAN; // leftover values = malformed expression
     return stack[top];
 }
 

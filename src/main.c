@@ -15,7 +15,7 @@ int main(void)
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(screenWidth, screenHeight, "GCalc");
     SetWindowFocused();
-    SetTargetFPS(30);
+    //SetTargetFPS(30);
 
     Camera2D camera = {0};
     camera.offset = (Vector2){screenWidth / 2.0f, screenHeight / 2.0f};
@@ -57,7 +57,7 @@ int main(void)
             if (currentFPS != 60)
             {
                 currentFPS = 60;
-                SetTargetFPS(currentFPS); // מתעוררים!
+                //SetTargetFPS(currentFPS); // מתעוררים!
             }
         }
         else
@@ -68,7 +68,7 @@ int main(void)
             if (idleTimer > 1.0f && currentFPS != 15)
             {
                 currentFPS = 5;
-                SetTargetFPS(currentFPS); // הולכים לישון
+                //SetTargetFPS(currentFPS); // הולכים לישון
             }
         }
 

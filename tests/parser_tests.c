@@ -222,6 +222,10 @@ int main()
     assert_evaluate("x / 2",    3, 1.5,  "Eval: fractional result");
     assert_evaluate("(x+1)(x-1)", 3, 8.0, "Eval: (x+1)(x-1) at x=3");
 
+    // Malformed expressions must return NAN, not garbage
+    assert_evaluate("x^2 + 2*x - 3^", 2, NAN, "Eval: trailing operator -> NAN");
+    assert_evaluate("x +",           1, NAN, "Eval: dangling + -> NAN");
+
     printf("\n=== ALL TESTS PASSED SUCCESSFULLY! ===\n");
 
     // החזרת 0 מסמנת ל-GitHub Actions שהכל עבר בשלום (וי ירוק!)
