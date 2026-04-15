@@ -7,7 +7,7 @@
 int get_precedence(char op) {
     if (op == '+' || op == '-') return 1;
     if (op == '*' || op == '/') return 2;
-    if (op == '^')              return 3;
+    if (op == '^' || op == 'n') return 3;  // 'n' = unary negation, same prec as ^
     return 0;
 }
 
@@ -32,7 +32,7 @@ Token *infix_to_postfix(Token *infix) {
             pop(stack); // discard left paren
         } else if (t.type == TOKEN_OPERATOR) {
             int  prec       = get_precedence(t.symbol);
-            bool left_assoc = (t.symbol != '^'); // ^ is right-associative
+            bool left_assoc = (t.symbol != '^' && t.symbol != 'n'); // ^ and n are right-associative
             while (!is_empty(stack) && peek(stack).type == TOKEN_OPERATOR) {
                 int prec_top = get_precedence(peek(stack).symbol);
                 if ((left_assoc && prec_top >= prec) || (!left_assoc && prec_top > prec))
@@ -72,18 +72,24 @@ double evaluate_postfix(Token *postfix, double x_value) {
         } else if (t.type == TOKEN_VARIABLE) {
             stack[++top] = x_value;
         } else if (t.type == TOKEN_OPERATOR) {
-            if (top < 1) return NAN; // not enough operands (e.g. trailing operator)
-            double right = stack[top--];
-            double left  = stack[top--];
-            switch (t.symbol) {
-                case '+': stack[++top] = left + right;        break;
-                case '-': stack[++top] = left - right;        break;
-                case '*': stack[++top] = left * right;        break;
-                case '/':
-                    if (right == 0.0) return NAN;
-                    stack[++top] = left / right;
-                    break;
-                case '^': stack[++top] = pow(left, right);    break;
+            if (t.symbol == 'n') {
+                // Unary negation: one operand
+                if (top < 0) return NAN;
+                stack[top] = -stack[top];
+            } else {
+                if (top < 1) return NAN; // not enough operands (e.g. trailing operator)
+                double right = stack[top--];
+                double left  = stack[top--];
+                switch (t.symbol) {
+                    case '+': stack[++top] = left + right;        break;
+                    case '-': stack[++top] = left - right;        break;
+                    case '*': stack[++top] = left * right;        break;
+                    case '/':
+                        if (right == 0.0) return NAN;
+                        stack[++top] = left / right;
+                        break;
+                    case '^': stack[++top] = pow(left, right);    break;
+                }
             }
         }
     }

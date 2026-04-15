@@ -195,22 +195,33 @@ int main()
 
     // ---------------------------------------------------------
     // טסט 6: מינוס אונרי (-x^2 + 3)
-    // הלקסר מתייחס ל-'-' כאופרטור בינארי, ולכן הפוסטפיקס הוא:
-    // x 2 ^ - 3 +
+    // הטוקנייזר פולט 'n' (negation) במקום '0 -'.
+    // Postfix: x 2 ^ n 3 +  → at x=2: -(2^2)+3 = -1
     // ---------------------------------------------------------
-    // Tokenizer inserts '0' before unary '-', so '-x^2 + 3' becomes '0 - x^2 + 3'.
-    // Postfix: 0 x 2 ^ - 3 +
     Token expected_unary[] = {
-        {TOKEN_NUMBER,   0.0,  0 },
         {TOKEN_VARIABLE, 0.0, 'x'},
         {TOKEN_NUMBER,   2.0,  0 },
         {TOKEN_OPERATOR, 0.0, '^'},
-        {TOKEN_OPERATOR, 0.0, '-'},
+        {TOKEN_OPERATOR, 0.0, 'n'},
         {TOKEN_NUMBER,   3.0,  0 },
         {TOKEN_OPERATOR, 0.0, '+'},
         {TOKEN_EOF,      0.0,  0 }
     };
     run_test("-x^2 + 3", expected_unary, "Unary minus (-x^2 + 3) postfix shape");
+
+    // ---------------------------------------------------------
+    // טסט 7: חזקה עם מעריך שלילי (x^-2)
+    // הטוקנייזר: x ^ n 2  → Postfix: x 2 n ^
+    // at x=2: 2^(-2) = 0.25
+    // ---------------------------------------------------------
+    Token expected_pow_neg[] = {
+        {TOKEN_VARIABLE, 0.0, 'x'},
+        {TOKEN_NUMBER,   2.0,  0 },
+        {TOKEN_OPERATOR, 0.0, 'n'},
+        {TOKEN_OPERATOR, 0.0, '^'},
+        {TOKEN_EOF,      0.0,  0 }
+    };
+    run_test("x^-2", expected_pow_neg, "Power with negative exponent (x^-2) postfix shape");
 
     // ---------------------------------------------------------
     // evaluate_postfix tests
@@ -245,6 +256,11 @@ int main()
     assert_evaluate("-x^2 + 3", 2,  -1.0, "Eval: unary minus -x^2+3 at x=2");
     assert_evaluate("-x^2 + 3", 0,   3.0, "Eval: unary minus -x^2+3 at x=0");
     assert_evaluate("-x^2 + 3", 1,   2.0, "Eval: unary minus -x^2+3 at x=1");
+
+    // Negative exponent: x^-2
+    assert_evaluate("x^-2", 2,  0.25,   "Eval: x^-2 at x=2");
+    assert_evaluate("x^-2", 4,  0.0625, "Eval: x^-2 at x=4");
+    assert_evaluate("x^-2", 1,  1.0,    "Eval: x^-2 at x=1");
 
     // Malformed expressions must return NAN, not garbage
     assert_evaluate("x^2 + 2*x - 3^", 2, NAN, "Eval: trailing operator -> NAN");

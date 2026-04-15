@@ -56,14 +56,14 @@ Token *tokenizer(char *input)
         case '\t':
             break;
         case '-':
-            // unary minus: insert implicit 0 when '-' starts an expression or follows an operator/'('
+            // unary minus: emit 'n' (negation) operator instead of inserting '0 -'
             if (i == 0 || res[i-1].type == TOKEN_OPERATOR || res[i-1].type == TOKEN_LPAREN) {
-                res[i].type  = TOKEN_NUMBER;
-                res[i].value = 0.0;
-                i++;
+                res[i].type   = TOKEN_OPERATOR;
+                res[i].symbol = 'n';
+            } else {
+                res[i].type   = TOKEN_OPERATOR;
+                res[i].symbol = '-';
             }
-            res[i].type   = TOKEN_OPERATOR;
-            res[i].symbol = '-';
             i++;
             break;
         case '+':
