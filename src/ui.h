@@ -20,4 +20,13 @@ Textbox;
 bool textbox_update(Textbox *tb, Rectangle bounds);
 void textbox_draw(const Textbox *tb, Rectangle bounds);
 
+typedef struct {
+    float value;
+    bool  dragging;
+} Slider;
+
+// Returns true when value changes
+bool slider_update(Slider *s, Rectangle bounds);
+void slider_draw(const Slider *s, Rectangle bounds, Color accent);
+
 #endif

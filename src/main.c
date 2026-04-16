@@ -12,7 +12,7 @@ int currentFPS = 120;
 int main(void)
 {
     char * text1=calloc(256,sizeof(char));
-    strcpy(text1,"x^2 + 2*x - 3");
+    strcpy(text1,"1/x");
     char * text2=calloc(256,sizeof(char));
     strcpy(text2,"-x^2 +3");
     Token *tokens1 = parse(text1);
@@ -23,13 +23,17 @@ int main(void)
     f[0].tb.len=strlen(text1);
     f[0].tb.cursor=f[0].tb.len;
     f[0].tb.font_size=22;
+    f[0].thickness=3;
+    f[0].slider = (Slider){ 3.0f, false };
     f[1] = (Function){tokens2, BLUE};
     f[1].tb.text=text2;
     f[1].tb.len=strlen(text2);
     f[1].tb.cursor=f[1].tb.len;
     f[1].tb.font_size=22;
+    f[1].thickness=3;
+    f[1].slider = (Slider){ 3.0f, false };
     int fcount = 2;
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE|FLAG_MSAA_4X_HINT);
     InitWindow(screenWidth, screenHeight, "GCalc");
     SetWindowFocused();
     SetTargetFPS(currentFPS);
@@ -59,7 +63,8 @@ int main(void)
         
         for (int i = 0; i < fcount; i++)
         {
-            Rectangle b = { TB_X, GetScreenHeight() - TB_MARGIN - TB_H - i * (TB_H + TB_PAD), TB_W, TB_H };
+            Rectangle b  = { TB_X, GetScreenHeight() - TB_MARGIN - TB_H - i * (TB_H + TB_PAD), TB_W, TB_H };
+            Rectangle sb = { TB_X + TB_W + 8, b.y, 120, TB_H };
             is_one_tb_active = textbox_update(&f[i].tb, b);
             isTextBoxActive |= is_one_tb_active;
             if (is_one_tb_active)
@@ -67,6 +72,8 @@ int main(void)
                 free(f[i].tokens);
                 f[i].tokens = parse(f[i].tb.text);
             }
+            if (slider_update(&f[i].slider, sb))
+                f[i].thickness = f[i].slider.value;
         }
 
         Vector2 mouseDelta = GetMouseDelta();
@@ -112,7 +119,7 @@ int main(void)
         }
         EndMode2D();
         Rectangle tb_start = { TB_X, GetScreenHeight() - TB_MARGIN - TB_H, TB_W, TB_H };
-        draw_functions(f, fcount, tb_start, TB_PAD);
+        draw_functions_tbs(f, fcount, tb_start, TB_PAD);
         
         DrawText(TextFormat("Zoom: %.2f", camera.zoom), 10, 10, 18, DARKGRAY);
         EndDrawing();

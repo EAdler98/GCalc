@@ -1,5 +1,11 @@
 #include "ui.h"
 #include <string.h>
+#include <math.h>
+
+
+const float min = 1.0f;
+const float max = 5.0f;
+const float step =0.5f;
 
 bool textbox_update(Textbox *tb, Rectangle bounds)
 {
@@ -62,4 +68,59 @@ void textbox_draw(const Textbox *tb, Rectangle b)
         int cx = (int)b.x + 6 + (int)measured.x;
         DrawLine(cx, (int)b.y + 4, cx, (int)b.y + (int)b.height - 4, DARKGRAY);
     }
+}
+
+bool slider_update(Slider *s, Rectangle b)
+{
+   
+    float prev = s->value;
+    Vector2 mouse = GetMousePosition();
+
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(mouse, b))
+        s->dragging = true;
+    if (!IsMouseButtonDown(MOUSE_BUTTON_LEFT))
+        s->dragging = false;
+
+    if (s->dragging) {
+        const float pad = 8.0f;
+        float t = (mouse.x - (b.x + pad)) / (b.width - pad * 2.0f);
+        t = t < 0.0f ? 0.0f : t > 1.0f ? 1.0f : t;
+        float raw = min + t * (max - min);
+        s->value = roundf(raw / step) * step;
+        s->value = s->value < min ? min : s->value > max ? max : s->value;
+    }
+
+    return s->value != prev;
+}
+
+void slider_draw(const Slider *s, Rectangle b, Color accent)
+{
+
+    const float pad     = 8.0f;
+    const float track_x = b.x + pad;
+    const float track_w = b.width - pad * 2.0f;
+    const float track_y = b.y + b.height * 0.72f;
+    const int   thumb_r = 7;
+
+    float t       = (s->value - min) / (max - min);
+    float thumb_x = track_x + t * track_w;
+
+    // Background
+    DrawRectangleRec(b, (Color){ 230, 230, 230, 255 });
+    DrawRectangleLinesEx(b, 1, GRAY);
+
+    // Track (empty)
+    DrawRectangle((int)track_x, (int)track_y - 2, (int)track_w, 4, GRAY);
+    // Track (filled up to thumb)
+    DrawRectangle((int)track_x, (int)track_y - 2, (int)(thumb_x - track_x), 4, accent);
+
+    // Thumb: outer ring then accent fill
+    DrawCircle((int)thumb_x, (int)track_y, thumb_r,     WHITE);
+    DrawCircle((int)thumb_x, (int)track_y, thumb_r - 1, accent);
+
+    // Value label centred at top of the bounds
+    const char *label = TextFormat("%.1f", s->value);
+    int fs = 13;
+    int tw = MeasureText(label, fs);
+    DrawText(label, (int)(b.x + b.width * 0.5f) - tw / 2, (int)b.y + 3, fs, DARKGRAY);
 }
