@@ -12,13 +12,25 @@ Token *tokenizer(char *input)
     char *ptr = input;
     while (*ptr)
     {
-        // implicit multiplication: 2x, 2(x+1), (a)(b)
+        // implicit multiplication: 2x, 2(x+1), (x+1)(x-1), x(x+1)
         // must run first, before isalpha/isdigit consume the current char
         if (i > 0) {
             TokenType prev = res[i-1].type;
-            bool prev_can_multiply = (prev == TOKEN_NUMBER || prev == TOKEN_VARIABLE || prev == TOKEN_RPAREN);
+            bool prev_can_multiply = (prev == TOKEN_NUMBER || prev == TOKEN_RPAREN);
             bool curr_starts_group = (isalpha(*ptr) || *ptr == '(');
             if (prev_can_multiply && curr_starts_group) {
+                res[i].type   = TOKEN_OPERATOR;
+                res[i].symbol = '*';
+                i++;
+            }
+
+            // Reject adjacent variables like "xx" instead of treating them as implicit multiplication.
+            if (res[i-1].type == TOKEN_VARIABLE && isalpha(*ptr)) {
+                free(res);
+                return NULL;
+            }
+
+            if (res[i-1].type == TOKEN_VARIABLE && *ptr == '(') {
                 res[i].type   = TOKEN_OPERATOR;
                 res[i].symbol = '*';
                 i++;

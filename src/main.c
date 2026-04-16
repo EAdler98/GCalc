@@ -43,65 +43,40 @@ int main(void)
     camera.zoom = 1.0f;
     Vector2 target_pos = camera.target;
     float target_zoom = camera.zoom;
-    float idleTimer;
-    // Textbox tb = {0};
-    // strncpy(tb.text, "x^2 + 2*x - 3", TEXTBOX_MAX - 1);
-    // tb.len = strlen(tb.text);
+    float idleTimer = 0.0f;
 
-    // to load a custom font:
-    //   tb.font = LoadFontEx("resources/myfont.ttf", 32, NULL, 0);
-    //   tb.font_size = 22;
-
-    const int TB_X = 10, TB_W = 320, TB_H = 36, TB_MARGIN = 10, TB_PAD = 4;
+  
 
     while (!WindowShouldClose())
     {
+        bool any_textbox_active = false;
 
-        bool isTextBoxActive = false;
-        bool is_one_tb_active;
-        // re-parse when user submits a new expression
-        
         for (int i = 0; i < fcount; i++)
         {
-            Rectangle b  = { TB_X, GetScreenHeight() - TB_MARGIN - TB_H - i * (TB_H + TB_PAD), TB_W, TB_H };
-            Rectangle sb = { TB_X + TB_W + 8, b.y, 120, TB_H };
-            is_one_tb_active = textbox_update(&f[i].tb, b);
-            isTextBoxActive |= is_one_tb_active;
-            if (is_one_tb_active)
-            {
-                free(f[i].tokens);
-                f[i].tokens = parse(f[i].tb.text);
-            }
-            if (slider_update(&f[i].slider, sb))
-                f[i].thickness = f[i].slider.value;
+            any_textbox_active = any_textbox_active || f[i].tb.active;
         }
 
-        Vector2 mouseDelta = GetMouseDelta();
         float wheel = GetMouseWheelMove();
-        int keyPressed = GetKeyPressed();
+        bool isUserActive = (IsMouseButtonDown(MOUSE_BUTTON_LEFT) || IsMouseButtonDown(MOUSE_BUTTON_RIGHT) ||
+                             IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || wheel != 0 || any_textbox_active ||
+                             IsKeyPressed(KEY_F11));
 
-        // (נוסיף גם בדיקה אם תיבת הטקסט לחוצה, כדי שהסמן יהבהב בצורה חלקה)
-        bool isUserActive = (IsMouseButtonDown(MOUSE_BUTTON_LEFT) || IsMouseButtonDown(MOUSE_BUTTON_RIGHT) || wheel != 0 || keyPressed != 0 || isTextBoxActive);
-
-        // 2. עדכון הטיימר וה-FPS
         if (isUserActive)
         {
-            idleTimer = 0.0f; // איפוס הטיימר
+            idleTimer = 0.0f;
             if (currentFPS != 60)
             {
                 currentFPS = 60;
-                SetTargetFPS(currentFPS); // מתעוררים!
+                SetTargetFPS(currentFPS);
             }
         }
         else
         {
-            idleTimer += GetFrameTime(); // הוספת הזמן שעבר מאז הפריים הקודם
-
-            // אם עברו 2 שניות בלי תזוזה, נכנסים למצב שינה
+            idleTimer += GetFrameTime();
             if (idleTimer > 1.0f && currentFPS != 20)
             {
                 currentFPS = 20;
-                SetTargetFPS(currentFPS); // הולכים לישון
+                SetTargetFPS(currentFPS);
             }
         }
 
@@ -112,20 +87,48 @@ int main(void)
         BeginMode2D(camera);
         draw_grid(camera, SCALE);
         draw_axes(camera);
-        Function *p = f;
         for (int i = 0; i < fcount; i++)
         {
             draw_function(f[i], camera, SCALE);
         }
         EndMode2D();
-        Rectangle tb_start = { TB_X, GetScreenHeight() - TB_MARGIN - TB_H, TB_W, TB_H };
-        draw_functions_tbs(f, fcount, tb_start, TB_PAD);
-        
+
+        FunctionPanelResult panel = draw_functions_tbs(f, fcount, 8);
+
         DrawText(TextFormat("Zoom: %.2f", camera.zoom), 10, 10, 18, DARKGRAY);
         EndDrawing();
+
         if (IsKeyPressed(KEY_F11))
         {
             ToggleFullscreen();
+        }
+
+        if (panel.to_reparse >= 0) {
+            free(f[panel.to_reparse].tokens);
+            f[panel.to_reparse].tokens = parse(f[panel.to_reparse].tb.text);
+        }
+
+        if (panel.to_remove >= 0) {
+            free(f[panel.to_remove].tokens);
+            free(f[panel.to_remove].tb.text);
+            memmove(&f[panel.to_remove], &f[panel.to_remove + 1], (fcount - panel.to_remove - 1) * sizeof(Function));
+            fcount--;
+        }
+        if (panel.do_add) {
+            f = realloc(f, (fcount + 1) * sizeof(Function));
+            f[fcount] = (Function){0};
+            char *text = calloc(256, sizeof(char));
+            text[0] = '\0';
+            f[fcount].tokens       = parse(text);
+            f[fcount].color        = palette[fcount % 8];
+            f[fcount].tb.text      = text;
+            f[fcount].tb.len       = 0;
+            f[fcount].tb.cursor    = 0;
+            f[fcount].tb.font_size = 22;
+            f[fcount].tb.active    = true;
+            f[fcount].thickness    = 3.0f;
+            f[fcount].slider       = (Slider){ 3.0f, false };
+            fcount++;
         }
     }
 

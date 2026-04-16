@@ -1,8 +1,10 @@
 #include "graph.h"
 #include "raymath.h"
 #include <math.h>
+#include <stddef.h>
 
 const float STEP_SCALE=.2f; //The smaller the value, the smoother the functions are (slower performence). 
+
 void update_camera_smooth(Camera2D *camera, Vector2 *target_pos, float *target_zoom)
 {
     const float smooth = 0.1f;
@@ -86,19 +88,12 @@ void draw_axes(Camera2D camera)
     DrawLine(0, (int)tl.y, 0, (int)br.y, BLACK);
 }
 
-void draw_functions_tbs(Function *f, int count, Rectangle start, int padding)
-{
-    Rectangle b = start;
-    for (int i = 0; i < count; i++) {
-        textbox_draw(&f[i].tb, b);
-        Rectangle sb = { b.x + b.width + 8, b.y, 120, b.height };
-        slider_draw(&f[i].slider, sb, f[i].color);
-        b.y -= b.height + padding;
-    }
-}
+
 
 void draw_function(Function f, Camera2D camera, float scale)
 {
+    if (f.tokens == NULL) return;
+
     Vector2 left_edge  = GetScreenToWorld2D((Vector2){ 0,                0 }, camera);
     Vector2 right_edge = GetScreenToWorld2D((Vector2){ GetScreenWidth(), 0 }, camera);
 

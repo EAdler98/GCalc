@@ -80,6 +80,19 @@ void run_test(char *input, Token *expected, const char *test_name)
     free(actual_postfix);
 }
 
+void assert_tokenizer_null(char *input, const char *test_name)
+{
+    Token *infix = tokenizer(input);
+    if (infix != NULL)
+    {
+        printf("ג [FAILED] %s (Tokenizer should have returned NULL)\n", test_name);
+        free(infix);
+        exit(1);
+    }
+
+    printf("ג… [PASSED] %s\n", test_name);
+}
+
 // ---- evaluate_postfix helpers ----------------------------------------
 
 void assert_evaluate(const char *expr, double x, double expected, const char *test_name)
@@ -222,6 +235,8 @@ int main()
         {TOKEN_EOF,      0.0,  0 }
     };
     run_test("x^-2", expected_pow_neg, "Power with negative exponent (x^-2) postfix shape");
+
+    assert_tokenizer_null("xx", "Reject adjacent variables (xx)");
 
     // ---------------------------------------------------------
     // evaluate_postfix tests

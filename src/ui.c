@@ -2,125 +2,106 @@
 #include <string.h>
 #include <math.h>
 
+#define RAYGUI_IMPLEMENTATION
+#include "../build/external/raylib-master/examples/core/raygui.h"
+
 
 const float min = 1.0f;
 const float max = 5.0f;
 const float step =0.5f;
 
+static void ensure_raygui_style(void)
+{
+    static bool initialized = false;
+    if (initialized) return;
+
+    GuiLoadStyleDefault();
+    GuiSetStyle(DEFAULT, TEXT_SIZE, 20);
+    GuiSetStyle(TEXTBOX, TEXT_PADDING, 8);
+    GuiSetStyle(TEXTBOX, TEXT_ALIGNMENT, TEXT_ALIGN_LEFT);
+    GuiSetStyle(BUTTON, TEXT_ALIGNMENT, TEXT_ALIGN_CENTER);
+    GuiSetStyle(SLIDER, TEXT_PADDING, 6);
+
+    initialized = true;
+}
+
 bool textbox_update(Textbox *tb, Rectangle bounds)
 {
-    int prev_len = tb->len;
+    if ((tb == NULL) || (tb->text == NULL)) return false;
 
-    // click to focus / unfocus
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-        tb->active = CheckCollisionPointRec(GetMousePosition(), bounds);
+    ensure_raygui_style();
 
-    if (!tb->active) return false;
+    char previous[TEXTBOX_MAX];
+    strncpy(previous, tb->text, TEXTBOX_MAX - 1);
+    previous[TEXTBOX_MAX - 1] = '\0';
 
-    // arrow keys: move cursor
-    if (IsKeyPressed(KEY_LEFT)  && tb->cursor > 0)      tb->cursor--;
-    if (IsKeyPressed(KEY_RIGHT) && tb->cursor < tb->len) tb->cursor++;
-    if (IsKeyPressed(KEY_HOME) ) tb->cursor=0;
-    if (IsKeyPressed(KEY_END)) tb->cursor=tb->len;
+    if (GuiTextBox(bounds, tb->text, TEXTBOX_MAX, tb->active)) tb->active = !tb->active;
 
-    // character input: insert at cursor
-    int key = GetCharPressed();
-    while (key > 0) {
-        if (key >= 32 && tb->len < TEXTBOX_MAX - 1) {
-            memmove(&tb->text[tb->cursor + 1], &tb->text[tb->cursor], tb->len - tb->cursor + 1);
-            tb->text[tb->cursor++] = (char)key;
-            tb->len++;
-        }
-        key = GetCharPressed();
-    }
+    tb->len = (int)strlen(tb->text);
+    tb->cursor = tb->len;
 
-    // backspace: delete character before cursor
-    if (IsKeyPressed(KEY_BACKSPACE) && tb->cursor > 0) {
-        memmove(&tb->text[tb->cursor - 1], &tb->text[tb->cursor], tb->len - tb->cursor + 1);
-        tb->cursor--;
-        tb->len--;
-    }
-
-    return tb->len != prev_len;
+    return strcmp(previous, tb->text) != 0;
 }
 
 void textbox_draw(const Textbox *tb, Rectangle b)
 {
-    int   fs     = tb->font_size > 0 ? tb->font_size : (int)b.height - 10;
-    bool  custom = tb->font.texture.id > 0;
-    Font  font   = custom ? tb->font : GetFontDefault();
-    int   text_y = (int)b.y + ((int)b.height - fs) / 2;
+    if ((tb == NULL) || (tb->text == NULL)) return;
 
-    Color bg     = tb->active ? WHITE    : LIGHTGRAY;
-    Color border = tb->active ? DARKBLUE : DARKGRAY;
-
-    DrawRectangleRec(b, bg);
-    DrawRectangleLinesEx(b, 2, border);
-    DrawTextEx(font, tb->text, (Vector2){ b.x + 6, text_y }, fs, 1, DARKGRAY);
-
-    // blinking cursor at insertion point
-    if (tb->active && ((int)(GetTime() * 2) % 2)) {
-        char tmp[TEXTBOX_MAX];
-        int clen = tb->cursor < TEXTBOX_MAX ? tb->cursor : TEXTBOX_MAX - 1;
-        memcpy(tmp, tb->text, clen);
-        tmp[clen] = '\0';
-        Vector2 measured = MeasureTextEx(font, tmp, fs, 1);
-        int cx = (int)b.x + 6 + (int)measured.x;
-        DrawLine(cx, (int)b.y + 4, cx, (int)b.y + (int)b.height - 4, DARKGRAY);
-    }
+    ensure_raygui_style();
+    GuiTextBox(b, tb->text, TEXTBOX_MAX, false);
 }
 
 bool slider_update(Slider *s, Rectangle b)
 {
-   
+    if (s == NULL) return false;
+
+    ensure_raygui_style();
+
     float prev = s->value;
-    Vector2 mouse = GetMousePosition();
-
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(mouse, b))
-        s->dragging = true;
-    if (!IsMouseButtonDown(MOUSE_BUTTON_LEFT))
-        s->dragging = false;
-
-    if (s->dragging) {
-        const float pad = 8.0f;
-        float t = (mouse.x - (b.x + pad)) / (b.width - pad * 2.0f);
-        t = t < 0.0f ? 0.0f : t > 1.0f ? 1.0f : t;
-        float raw = min + t * (max - min);
-        s->value = roundf(raw / step) * step;
-        s->value = s->value < min ? min : s->value > max ? max : s->value;
-    }
+    GuiSliderBar(b, NULL, NULL, &s->value, min, max);
+    s->value = roundf(s->value / step) * step;
+    s->value = s->value < min ? min : s->value > max ? max : s->value;
+    s->dragging = IsMouseButtonDown(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(GetMousePosition(), b);
 
     return s->value != prev;
 }
 
 void slider_draw(const Slider *s, Rectangle b, Color accent)
 {
+    (void)accent;
+    if ((s == NULL)) return;
 
-    const float pad     = 8.0f;
-    const float track_x = b.x + pad;
-    const float track_w = b.width - pad * 2.0f;
-    const float track_y = b.y + b.height * 0.72f;
-    const int   thumb_r = 7;
+    ensure_raygui_style();
+    GuiSliderBar(b, NULL, TextFormat("%.1f", s->value), (float *)&s->value, min, max);
+}
 
-    float t       = (s->value - min) / (max - min);
-    float thumb_x = track_x + t * track_w;
+bool button(Rectangle b, const char *label)
+{
+    ensure_raygui_style();
+    return GuiButton(b, label);
+}
 
-    // Background
-    DrawRectangleRec(b, (Color){ 230, 230, 230, 255 });
-    DrawRectangleLinesEx(b, 1, GRAY);
+FunctionPanelResult draw_functions_tbs(Function *f, int count, int padding)
+{
+    FunctionPanelResult result = { .to_remove = -1, .to_reparse = -1, .do_add = false, .any_textbox_active = false };
 
-    // Track (empty)
-    DrawRectangle((int)track_x, (int)track_y - 2, (int)track_w, 4, GRAY);
-    // Track (filled up to thumb)
-    DrawRectangle((int)track_x, (int)track_y - 2, (int)(thumb_x - track_x), 4, accent);
+    Rectangle tb_s = { TB_X, GetScreenHeight() - TB_MARGIN - TB_H, TB_W, TB_H };
+    for (int i = 0; i < count; i++) {
+        Rectangle b  = { tb_s.x, tb_s.y - i * (TB_H + padding), tb_s.width, tb_s.height };
+        Rectangle cb = { b.x - 18, b.y + 8, 10, 10 };
+        Rectangle sb = { b.x + b.width + 8, b.y, 140, b.height };
+        Rectangle mb = { sb.x + sb.width + 8, b.y, b.height, b.height };
 
-    // Thumb: outer ring then accent fill
-    DrawCircle((int)thumb_x, (int)track_y, thumb_r,     WHITE);
-    DrawCircle((int)thumb_x, (int)track_y, thumb_r - 1, accent);
+        DrawRectangleRec(cb, f[i].color);
+        if (textbox_update(&f[i].tb, b)) result.to_reparse = i;
+        result.any_textbox_active = result.any_textbox_active || f[i].tb.active;
 
-    // Value label centred at top of the bounds
-    const char *label = TextFormat("%.1f", s->value);
-    int fs = 13;
-    int tw = MeasureText(label, fs);
-    DrawText(label, (int)(b.x + b.width * 0.5f) - tw / 2, (int)b.y + 3, fs, DARKGRAY);
+        if (slider_update(&f[i].slider, sb)) f[i].thickness = f[i].slider.value;
+        if (button(mb, "-")) result.to_remove = i;
+    }
+
+    Rectangle plus_b = { TB_X, tb_s.y - count * (TB_H + padding), TB_H, TB_H };
+    if (button(plus_b, "+")) result.do_add = true;
+
+    return result;
 }
