@@ -245,13 +245,19 @@ if (downloadRaylib) then
             makesettings [[
 .DEFAULT_GOAL := all
 
-.PHONY: test test_runner
+.PHONY: test test_runner graph_test_runner
 
-test: test_runner
+test: test_runner graph_test_runner
+	@./test_runner
+	@./graph_test_runner
 
 test_runner: tests/parser_tests.c src/parser.c src/token.c src/stack.c
 	@echo "==== Building test_runner ===="
 	@$(CC) -std=c17 -Wall -o ./test_runner tests/parser_tests.c src/parser.c src/token.c src/stack.c -Isrc -lm
+
+graph_test_runner: tests/graph_tests.c src/parser.c src/token.c src/stack.c
+	@echo "==== Building graph_test_runner ===="
+	@$(CC) -std=c17 -Wall -o ./graph_test_runner tests/graph_tests.c src/parser.c src/token.c src/stack.c -Isrc -lm
 ]]
         filter{}
 
