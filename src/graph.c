@@ -2,7 +2,7 @@
 #include "raymath.h"
 #include <math.h>
 
-const float STEP_SCALE=5.0f; //The smaller the value, the smoother the functions are (slower performence). 
+const float STEP_SCALE=1.0f; //The smaller the value, the smoother the functions are (slower performence). 
 void update_camera_smooth(Camera2D *camera, Vector2 *target_pos, float *target_zoom)
 {
     const float smooth = 0.1f;
@@ -86,7 +86,7 @@ void draw_axes(Camera2D camera)
     DrawLine(0, (int)tl.y, 0, (int)br.y, BLACK);
 }
 
-void draw_functions(Function *f, int count, Rectangle start, int padding)
+void draw_functions_tbs(Function *f, int count, Rectangle start, int padding)
 {
     Rectangle b = start;
     for (int i = 0; i < count; i++) {
@@ -117,15 +117,35 @@ void draw_function(Function f, Camera2D camera, float scale)
     for (float x = start_x + step; x <= end_x; x += step) {
         double y = evaluate_postfix(f.tokens, x);
         if (!isnan(y) && !isnan(prev_y)) {
+            // Pole detection: when sign flips, sample the midpoint.
+            // If the midpoint is NaN or jumps outside [min(y0,y1), max(y0,y1)],
+            // the function diverged through ±inf — skip the segment.
+            bool is_pole = false;
+            if (prev_y * y < 0) {
+                double y_mid = evaluate_postfix(f.tokens, (prev_x + x) * 0.5f);
+                double lo = prev_y < y ? prev_y : y;
+                double hi = prev_y < y ? y : prev_y;
+                is_pole = isnan(y_mid) || y_mid < lo || y_mid > hi;
+            }
+
             float wy0 = (float)-prev_y * scale;
             float wy1 = (float)-y      * scale;
-            // skip segment only if both endpoints are outside the same side
-            bool both_above = wy0 < world_y_min && wy1 < world_y_min;
-            bool both_below = wy0 > world_y_max && wy1 > world_y_max;
-            if (!both_above && !both_below) {
-                Vector2 p0 = { prev_x * scale, wy0 };
-                Vector2 p1 = { x      * scale, wy1 };
-                DrawLineEx(p0, p1, 2.0f / camera.zoom, f.color);
+            if (!is_pole) {
+                bool both_above = wy0 < world_y_min && wy1 < world_y_min;
+                bool both_below = wy0 > world_y_max && wy1 > world_y_max;
+                if (!both_above && !both_below) {
+                    Vector2 p0 = { prev_x * scale, wy0 };
+                    Vector2 p1 = { x      * scale, wy1 };
+                    DrawLineEx(p0, p1, 2.0f / camera.zoom, f.color);
+                }
+            } else {
+                // Each branch gets a vertical stub to the screen boundary so it
+                // always appears to shoot off the edge rather than being cut short.
+                float w = 2.0f / camera.zoom;
+                float edge0 = (prev_y < 0) ? world_y_max : world_y_min;
+                float edge1 = (y      > 0) ? world_y_min : world_y_max;
+                DrawLineEx((Vector2){ prev_x * scale, wy0 }, (Vector2){ prev_x * scale, edge0 }, w, f.color);
+                DrawLineEx((Vector2){ x      * scale, wy1 }, (Vector2){ x      * scale, edge1 }, w, f.color);
             }
         }
         prev_x = x;

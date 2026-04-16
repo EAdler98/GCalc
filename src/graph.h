@@ -16,6 +16,6 @@ void update_camera_smooth(Camera2D *camera, Vector2 *target_pos, float *target_z
 void draw_grid(Camera2D camera, float scale);
 void draw_axes(Camera2D camera);
 void draw_function(Function f, Camera2D camera, float scale);
-void draw_functions(Function *f, int count, Rectangle start, int padding);
+void draw_functions_tbs(Function *f, int count, Rectangle start, int padding);
 
 #endif
