@@ -6,10 +6,11 @@
 #include "ui.h"
 
 typedef struct {
-    Token *tokens;
-    Color  color;
-    Textbox tb;
-
+    Token   *tokens;
+    Color    color;
+    Textbox  tb;
+    float    thickness;
+    Slider   slider;
 } Function;
 
 void update_camera_smooth(Camera2D *camera, Vector2 *target_pos, float *target_zoom);

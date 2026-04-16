@@ -2,7 +2,7 @@
 #include "raymath.h"
 #include <math.h>
 
-const float STEP_SCALE=1.0f; //The smaller the value, the smoother the functions are (slower performence). 
+const float STEP_SCALE=.2f; //The smaller the value, the smoother the functions are (slower performence). 
 void update_camera_smooth(Camera2D *camera, Vector2 *target_pos, float *target_zoom)
 {
     const float smooth = 0.1f;
@@ -91,7 +91,9 @@ void draw_functions_tbs(Function *f, int count, Rectangle start, int padding)
     Rectangle b = start;
     for (int i = 0; i < count; i++) {
         textbox_draw(&f[i].tb, b);
-        b.y -= b.height + padding;  // stack upward
+        Rectangle sb = { b.x + b.width + 8, b.y, 120, b.height };
+        slider_draw(&f[i].slider, sb, f[i].color);
+        b.y -= b.height + padding;
     }
 }
 
@@ -136,7 +138,7 @@ void draw_function(Function f, Camera2D camera, float scale)
                 if (!both_above && !both_below) {
                     Vector2 p0 = { prev_x * scale, wy0 };
                     Vector2 p1 = { x      * scale, wy1 };
-                    DrawLineEx(p0, p1, 2.0f / camera.zoom, f.color);
+                    DrawLineEx(p0, p1, f.thickness / camera.zoom, f.color);
                 }
             } else {
                 // Each branch gets a vertical stub to the screen boundary so it
