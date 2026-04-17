@@ -9,6 +9,11 @@ int screenWidth = 1920;
 int screenHeight = 1080;
 const float SCALE = 20.0f;
 int currentFPS = 120;
+static const Color DARK_BACKGROUND = { 13, 17, 23, 255 };
+static const Color LIGHT_BACKGROUND = RAYWHITE;
+static const Color DARK_HUD_TEXT = { 230, 237, 243, 255 };
+static const Color LIGHT_HUD_TEXT = DARKGRAY;
+
 int main(void)
 {
     char * text1=calloc(256,sizeof(char));
@@ -24,14 +29,12 @@ int main(void)
     f[0].tb.cursor=f[0].tb.len;
     f[0].tb.font_size=22;
     f[0].thickness=3;
-    f[0].slider = (Slider){ 3.0f, false };
     f[1] = (Function){tokens2, BLUE};
     f[1].tb.text=text2;
     f[1].tb.len=strlen(text2);
     f[1].tb.cursor=f[1].tb.len;
     f[1].tb.font_size=22;
     f[1].thickness=3;
-    f[1].slider = (Slider){ 3.0f, false };
     int fcount = 2;
     SetConfigFlags(FLAG_WINDOW_RESIZABLE|FLAG_MSAA_4X_HINT);
     InitWindow(screenWidth, screenHeight, "GCalc");
@@ -44,6 +47,11 @@ int main(void)
     Vector2 target_pos = camera.target;
     float target_zoom = camera.zoom;
     float idleTimer = 0.0f;
+    bool dark_mode = true;
+    Slider thickness_slider = { 3.0f, false };
+
+    ui_set_dark_mode(dark_mode);
+    set_graph_dark_mode(dark_mode);
 
   
 
@@ -83,7 +91,7 @@ int main(void)
         update_camera_smooth(&camera, &target_pos, &target_zoom);
 
         BeginDrawing();
-        ClearBackground(RAYWHITE);
+        ClearBackground(dark_mode ? DARK_BACKGROUND : LIGHT_BACKGROUND);
         BeginMode2D(camera);
         draw_grid(camera, SCALE);
         draw_axes(camera);
@@ -94,8 +102,18 @@ int main(void)
         EndMode2D();
 
         FunctionPanelResult panel = draw_functions_tbs(f, fcount, 8);
+        Rectangle theme_button = { 10, 34, 130, 28 };
+        if (button(theme_button, dark_mode ? "Light Mode" : "Dark Mode")) {
+            dark_mode = !dark_mode;
+            ui_set_dark_mode(dark_mode);
+            set_graph_dark_mode(dark_mode);
+        }
+        DrawText("Thickness", 10, 68, 16, dark_mode ? DARK_HUD_TEXT : LIGHT_HUD_TEXT);
+        if (slider_update(&thickness_slider, (Rectangle){ 10, 88, 130, 24 })) {
+            for (int i = 0; i < fcount; i++) f[i].thickness = thickness_slider.value;
+        }
 
-        DrawText(TextFormat("Zoom: %.2f", camera.zoom), 10, 10, 18, DARKGRAY);
+        DrawText(TextFormat("Zoom: %.2f", camera.zoom), 10, 10, 18, dark_mode ? DARK_HUD_TEXT : LIGHT_HUD_TEXT);
         EndDrawing();
 
         if (IsKeyPressed(KEY_F11))
@@ -126,8 +144,7 @@ int main(void)
             f[fcount].tb.cursor    = 0;
             f[fcount].tb.font_size = 22;
             f[fcount].tb.active    = true;
-            f[fcount].thickness    = 3.0f;
-            f[fcount].slider       = (Slider){ 3.0f, false };
+            f[fcount].thickness    = thickness_slider.value;
             fcount++;
         }
     }

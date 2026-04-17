@@ -12,7 +12,8 @@ Plot mathematical expressions in `x` with smooth zoom and pan.
 | Scroll wheel | Zoom in or out, centered on the cursor |
 | Right / Middle drag | Pan the graph |
 | Textbox row | Edit a function with raygui textboxes |
-| Slider | Change function thickness |
+| Top-left theme button | Toggle light and dark mode |
+| Top-left thickness slider | Change line thickness for all functions |
 | `+` / `-` | Add or remove function rows |
 | F11 | Toggle fullscreen |
 | ESC | Quit |
@@ -89,13 +90,19 @@ x^2 + 2*x - 3
 (x-1)(x+1)
 -x^2 + 3
 1/x
+sqrt(x + 1)
+log(x)
+sin(x)
+cos(x)
 ```
 
 Operators: `+` `-` `*` `/` `^`
 
 Notes:
+- Only lowercase `x` is accepted as a variable.
 - Adjacent variables like `xx` are rejected; write `x*x` explicitly.
 - Implicit multiplication works for `2x`, `2(x+1)`, and `(x-1)(x+1)`.
+- Supported functions are `sqrt`, `log` (natural log), `sin`, and `cos`.
 
 ## Tests
 

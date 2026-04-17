@@ -32,7 +32,6 @@ typedef struct
     Color color;
     Textbox tb;
     float thickness;
-    Slider slider;
 } Function;
 
 typedef struct
@@ -51,6 +50,7 @@ void textbox_draw(const Textbox *tb, Rectangle bounds);
 bool slider_update(Slider *s, Rectangle bounds);
 void slider_draw(const Slider *s, Rectangle bounds, Color accent);
 FunctionPanelResult draw_functions_tbs(Function *f, int count, int padding);
+void ui_set_dark_mode(bool enabled);
 // Immediate-mode button: draws and returns true when clicked this frame
 bool button(Rectangle b, const char *label);
 

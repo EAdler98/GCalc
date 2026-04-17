@@ -15,7 +15,7 @@ typedef struct {
     TokenType type;
     double value;       // only for TOKEN_NUMBER
     char symbol;        // for operator ('+') or variable ('x')
-    char funcName[3];   // for function ("sin")
+    char funcName[8];   // for function names like "sqrt"
 } Token;
 
 Token *tokenizer(char *input);

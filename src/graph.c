@@ -4,6 +4,22 @@
 #include <stddef.h>
 
 const float STEP_SCALE=.2f; //The smaller the value, the smoother the functions are (slower performence). 
+static Color grid_color = { 58, 68, 80, 255 };
+static Color label_color = { 170, 184, 196, 255 };
+static Color axis_color = { 223, 230, 237, 255 };
+
+void set_graph_dark_mode(bool enabled)
+{
+    if (enabled) {
+        grid_color = (Color){ 58, 68, 80, 255 };
+        label_color = (Color){ 170, 184, 196, 255 };
+        axis_color = (Color){ 223, 230, 237, 255 };
+    } else {
+        grid_color = (Color){ 200, 200, 200, 255 };
+        label_color = DARKGRAY;
+        axis_color = BLACK;
+    }
+}
 
 void update_camera_smooth(Camera2D *camera, Vector2 *target_pos, float *target_zoom)
 {
@@ -58,15 +74,13 @@ void draw_grid(Camera2D camera, float scale)
     float font_size = 20.0f / camera.zoom;
     float offset    = font_size * 0.3f;
 
-    Color grid_color = (Color){ 200, 200, 200, 255 }; // light gray
-
     // vertical lines + X-axis labels
     int x_start = (int)floorf(tl.x / scale / grid_step) * grid_step;
     int x_end   = (int)ceilf (br.x / scale / grid_step) * grid_step;
     for (int i = x_start; i <= x_end; i += grid_step) {
         if (i != 0)
             DrawLine(i * scale, (int)tl.y, i * scale, (int)br.y, grid_color);
-        DrawText(TextFormat("%d", i), i * scale + offset, offset, font_size, DARKGRAY);
+        DrawText(TextFormat("%d", i), i * scale + offset, offset, font_size, label_color);
     }
 
     // horizontal lines + Y-axis labels
@@ -76,7 +90,7 @@ void draw_grid(Camera2D camera, float scale)
         if (i != 0)
             DrawLine((int)tl.x, -i * scale, (int)br.x, -i * scale, grid_color);
         if (i != 0)
-            DrawText(TextFormat("%d", i), offset, -i * scale + offset, font_size, DARKGRAY);
+            DrawText(TextFormat("%d", i), offset, -i * scale + offset, font_size, label_color);
     }
 }
 
@@ -84,8 +98,8 @@ void draw_axes(Camera2D camera)
 {
     Vector2 tl = GetScreenToWorld2D((Vector2){ 0,                0                 }, camera);
     Vector2 br = GetScreenToWorld2D((Vector2){ GetScreenWidth(), GetScreenHeight() }, camera);
-    DrawLine((int)tl.x, 0, (int)br.x, 0, BLACK);
-    DrawLine(0, (int)tl.y, 0, (int)br.y, BLACK);
+    DrawLine((int)tl.x, 0, (int)br.x, 0, axis_color);
+    DrawLine(0, (int)tl.y, 0, (int)br.y, axis_color);
 }
 
 
