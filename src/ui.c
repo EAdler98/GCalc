@@ -112,6 +112,14 @@ bool button(Rectangle b, const char *label)
     return GuiButton(b, label);
 }
 
+bool toggle_group(Rectangle b, const char *labels, int *active)
+{
+    if (style_dirty) ensure_raygui_style();
+    int prev = *active;
+    GuiToggleGroup(b, labels, active);
+    return *active != prev;
+}
+
 FunctionPanelResult draw_functions_tbs(Function *f, int count, int padding)
 {
     if (style_dirty) ensure_raygui_style();

@@ -104,6 +104,76 @@ void draw_axes(Camera2D camera)
 
 
 
+void draw_intersections(Function *f, int count, Camera2D camera, float scale, IntersectMode mode)
+{
+    if (mode == INTERSECT_NONE) return;
+
+    Vector2 left_edge  = GetScreenToWorld2D((Vector2){0,                0}, camera);
+    Vector2 right_edge = GetScreenToWorld2D((Vector2){GetScreenWidth(), 0}, camera);
+    float start_x = left_edge.x / scale;
+    float end_x   = right_edge.x / scale;
+    float step = STEP_SCALE / (camera.zoom * scale);
+    if (step <= 0) step = 0.01f;
+
+    float r         = 5.0f  / camera.zoom;
+    float font_size = 20.0f / camera.zoom;
+    float pad       = 3.0f  / camera.zoom;
+
+    for (int a = 0; a < count - 1; a++) {
+        if (!f[a].tokens) continue;
+        for (int b = a + 1; b < count; b++) {
+            if (!f[b].tokens) continue;
+
+            double prev_diff = evaluate_postfix(f[a].tokens, start_x)
+                             - evaluate_postfix(f[b].tokens, start_x);
+
+            for (float x = start_x + step; x <= end_x; x += step) {
+                double ya = evaluate_postfix(f[a].tokens, x);
+                double yb = evaluate_postfix(f[b].tokens, x);
+                if (isnan(ya) || isnan(yb)) { prev_diff = NAN; continue; }
+
+                double diff = ya - yb;
+
+                if (!isnan(prev_diff) && prev_diff * diff < 0) {
+                    // bisect to find precise crossing
+                    float  lo = x - step, hi = x;
+                    double diff_lo = prev_diff;
+                    for (int k = 0; k < 50; k++) {
+                        float  mid = (lo + hi) * 0.5f;
+                        double dya = evaluate_postfix(f[a].tokens, mid);
+                        double dyb = evaluate_postfix(f[b].tokens, mid);
+                        if (isnan(dya) || isnan(dyb)) break;
+                        double dm = dya - dyb;
+                        if (diff_lo * dm <= 0) hi = mid;
+                        else { lo = mid; diff_lo = dm; }
+                    }
+                    float  ix = (lo + hi) * 0.5f;
+                    double iy = evaluate_postfix(f[a].tokens, ix);
+                    if (isnan(iy)) { prev_diff = diff; continue; }
+
+                    float wx = ix * scale;
+                    float wy = (float)-iy * scale;
+
+                    // dot
+                    DrawCircleV((Vector2){wx, wy}, r, WHITE);
+                    DrawCircleLinesV((Vector2){wx, wy}, r, label_color);
+
+                    // label background + text
+                    const char *label = TextFormat("(%.2f, %.2f)", (double)ix, iy);
+                    Vector2 tsz = MeasureTextEx(GetFontDefault(), label, font_size, 1);
+                    Rectangle bg = { wx + r + pad, wy - tsz.y - pad,
+                                     tsz.x + pad * 2, tsz.y + pad * 2 };
+                    DrawRectangleRec(bg, (Color){0, 0, 0, 160});
+                    DrawTextEx(GetFontDefault(), label,
+                               (Vector2){bg.x + pad, bg.y + pad},
+                               font_size, 1, WHITE);
+                }
+                prev_diff = diff;
+            }
+        }
+    }
+}
+
 void draw_function(Function f, Camera2D camera, float scale)
 {
     if (f.tokens == NULL) return;

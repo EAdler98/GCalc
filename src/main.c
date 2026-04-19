@@ -4,6 +4,7 @@
 #include "ui.h"
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 int screenWidth = 1920;
 int screenHeight = 1080;
@@ -49,6 +50,7 @@ int main(void)
     float idleTimer = 0.0f;
     bool dark_mode = true;
     Slider thickness_slider = { 3.0f, false };
+    IntersectMode intersect_mode = INTERSECT_ALL;
 
     ui_set_dark_mode(dark_mode);
     set_graph_dark_mode(dark_mode);
@@ -99,6 +101,7 @@ int main(void)
         {
             draw_function(f[i], camera, SCALE);
         }
+        draw_intersections(f, fcount, camera, SCALE, intersect_mode);
         EndMode2D();
 
         FunctionPanelResult panel = draw_functions_tbs(f, fcount, 8);
@@ -111,6 +114,12 @@ int main(void)
         DrawText("Thickness", 10, 68, 16, dark_mode ? DARK_HUD_TEXT : LIGHT_HUD_TEXT);
         if (slider_update(&thickness_slider, (Rectangle){ 10, 88, 130, 24 })) {
             for (int i = 0; i < fcount; i++) f[i].thickness = thickness_slider.value;
+        }
+        DrawText("Crossings", 10, 118, 16, dark_mode ? DARK_HUD_TEXT : LIGHT_HUD_TEXT);
+        {
+            int im = (int)intersect_mode;
+            toggle_group((Rectangle){ 10, 138, 130, 24 }, "All;Off", &im);
+            intersect_mode = (IntersectMode)im;
         }
 
         DrawText(TextFormat("Zoom: %.2f", camera.zoom), 10, 10, 18, dark_mode ? DARK_HUD_TEXT : LIGHT_HUD_TEXT);

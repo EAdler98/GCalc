@@ -415,3 +415,5 @@ Makefile
 *.vcxproj.filters
 /main.c
 src/*.old
+test_runner.exe
+.claude/settings.local.json

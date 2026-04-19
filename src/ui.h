@@ -42,6 +42,11 @@ typedef struct
     bool any_textbox_active;
 } FunctionPanelResult;
 
+typedef enum {
+    INTERSECT_ALL  = 0,
+    INTERSECT_NONE = 1
+} IntersectMode;
+
 // Draws and updates a raygui textbox, returns true when the text content changes.
 bool textbox_update(Textbox *tb, Rectangle bounds);
 void textbox_draw(const Textbox *tb, Rectangle bounds);
@@ -53,5 +58,7 @@ FunctionPanelResult draw_functions_tbs(Function *f, int count, int padding);
 void ui_set_dark_mode(bool enabled);
 // Immediate-mode button: draws and returns true when clicked this frame
 bool button(Rectangle b, const char *label);
+// Toggle group: updates *active (0-indexed); returns true when selection changes
+bool toggle_group(Rectangle b, const char *labels, int *active);
 
 #endif
