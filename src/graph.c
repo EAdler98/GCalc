@@ -2,11 +2,34 @@
 #include "raymath.h"
 #include <math.h>
 #include <stddef.h>
+#include <float.h>
 
 const float STEP_SCALE=.2f; //The smaller the value, the smoother the functions are (slower performence). 
 static Color grid_color = { 58, 68, 80, 255 };
 static Color label_color = { 170, 184, 196, 255 };
 static Color axis_color = { 223, 230, 237, 255 };
+static const float HOVER_PICK_RADIUS_PX = 14.0f;
+
+static float point_segment_distance_sq(Vector2 p, Vector2 a, Vector2 b)
+{
+    Vector2 ab = Vector2Subtract(b, a);
+    float ab_len_sq = ab.x * ab.x + ab.y * ab.y;
+    if (ab_len_sq <= 0.0f) {
+        // Degenerate segment: treat it as a single point.
+        Vector2 ap = Vector2Subtract(p, a);
+        return ap.x * ap.x + ap.y * ap.y;
+    }
+
+    Vector2 ap = Vector2Subtract(p, a);
+    // Project p onto the segment, then clamp so the closest point stays on it.
+    float t = (ap.x * ab.x + ap.y * ab.y) / ab_len_sq;
+    if (t < 0.0f) t = 0.0f;
+    if (t > 1.0f) t = 1.0f;
+
+    Vector2 closest = Vector2Add(a, Vector2Scale(ab, t));
+    Vector2 delta = Vector2Subtract(p, closest);
+    return delta.x * delta.x + delta.y * delta.y;
+}
 
 void set_graph_dark_mode(bool enabled)
 {
@@ -102,11 +125,76 @@ void draw_axes(Camera2D camera)
     DrawLine(0, (int)tl.y, 0, (int)br.y, axis_color);
 }
 
+int get_hovered_function_index(Function *f, int count, Camera2D camera, float scale)
+{
+    if ((f == NULL) || (count <= 0)) return -1;
+
+    Vector2 mouse_screen = GetMousePosition();
+    Vector2 left_edge  = GetScreenToWorld2D((Vector2){ 0,                0 }, camera);
+    Vector2 right_edge = GetScreenToWorld2D((Vector2){ GetScreenWidth(), 0 }, camera);
+    float start_x = left_edge.x / scale;
+    float end_x   = right_edge.x / scale;
+    float step    = STEP_SCALE / (camera.zoom * scale);
+    if (step <= 0.0f) step = 0.01f;
+
+    int hovered = -1;
+    float best_distance_sq = FLT_MAX;
+
+    for (int i = 0; i < count; i++) {
+        if (f[i].tokens == NULL) continue;
+
+        // Give thicker curves a slightly larger hover target.
+        float pick_radius_px = HOVER_PICK_RADIUS_PX + f[i].thickness * 0.5f;
+        float pick_radius_sq = pick_radius_px * pick_radius_px;
+        float prev_x = start_x;
+        double prev_y = evaluate_postfix(f[i].tokens, prev_x);
+
+        for (float x = start_x + step; x <= end_x; x += step) {
+            double y = evaluate_postfix(f[i].tokens, x);
+            if (!isnan(y) && !isnan(prev_y) && isfinite(y) && isfinite(prev_y)) {
+                bool is_pole = false;
+                if (prev_y * y < 0) {
+                    // Reuse the same pole test as drawing so hover does not snap
+                    // onto the fake bridge across an asymptote.
+                    double y_mid = evaluate_postfix(f[i].tokens, (prev_x + x) * 0.5f);
+                    double lo = prev_y < y ? prev_y : y;
+                    double hi = prev_y < y ? y : prev_y;
+                    is_pole = isnan(y_mid) || !isfinite(y_mid) || y_mid < lo || y_mid > hi;
+                }
+
+                if (!is_pole) {
+                    Vector2 p0 = GetWorldToScreen2D((Vector2){ prev_x * scale, (float)-prev_y * scale }, camera);
+                    Vector2 p1 = GetWorldToScreen2D((Vector2){ x * scale,      (float)-y      * scale }, camera);
+                    // Compare in screen space so "near the line" feels consistent
+                    // even when the curve is steep in world coordinates.
+                    float distance_sq = point_segment_distance_sq(mouse_screen, p0, p1);
+                    if (distance_sq <= pick_radius_sq && distance_sq < best_distance_sq) {
+                        best_distance_sq = distance_sq;
+                        hovered = i;
+                    }
+                }
+            }
+
+            prev_x = x;
+            prev_y = y;
+        }
+    }
+
+    return hovered;
+}
+
 
 
 void draw_intersections(Function *f, int count, Camera2D camera, float scale, IntersectMode mode)
 {
     if (mode == INTERSECT_NONE) return;
+    int hovered_function = -1;
+    if (mode == INTERSECT_HOVER) {
+        // In hover mode, only show crossings that involve the function nearest
+        // to the cursor.
+        hovered_function = get_hovered_function_index(f, count, camera, scale);
+        if (hovered_function < 0) return;
+    }
 
     Vector2 left_edge  = GetScreenToWorld2D((Vector2){0,                0}, camera);
     Vector2 right_edge = GetScreenToWorld2D((Vector2){GetScreenWidth(), 0}, camera);
@@ -123,6 +211,7 @@ void draw_intersections(Function *f, int count, Camera2D camera, float scale, In
         if (!f[a].tokens) continue;
         for (int b = a + 1; b < count; b++) {
             if (!f[b].tokens) continue;
+            if (hovered_function >= 0 && a != hovered_function && b != hovered_function) continue;
 
             double prev_diff = evaluate_postfix(f[a].tokens, start_x)
                              - evaluate_postfix(f[b].tokens, start_x);

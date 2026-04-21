@@ -118,7 +118,7 @@ int main(void)
         DrawText("Crossings", 10, 118, 16, dark_mode ? DARK_HUD_TEXT : LIGHT_HUD_TEXT);
         {
             int im = (int)intersect_mode;
-            toggle_group((Rectangle){ 10, 138, 130, 24 }, "All;Off", &im);
+            toggle_group((Rectangle){ 10, 138, 120, 24 }, "All;Hover;Off", &im);
             intersect_mode = (IntersectMode)im;
         }
 

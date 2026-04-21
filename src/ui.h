@@ -43,8 +43,9 @@ typedef struct
 } FunctionPanelResult;
 
 typedef enum {
-    INTERSECT_ALL  = 0,
-    INTERSECT_NONE = 1
+    INTERSECT_ALL   = 0,
+    INTERSECT_HOVER = 1,
+    INTERSECT_NONE  = 2
 } IntersectMode;
 
 // Draws and updates a raygui textbox, returns true when the text content changes.
