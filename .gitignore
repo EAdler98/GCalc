@@ -416,4 +416,9 @@ Makefile
 /main.c
 src/*.old
 test_runner.exe
+graph_test_runner.exe
+gcalc_user_config.txt
+gcalc_functions.txt
+config/*.txt
+!config/.gitkeep
 .claude/settings.local.json
