@@ -19,6 +19,17 @@ static unsigned int dark_surface_focus = 0x263446ff;
 static unsigned int dark_accent = 0x6ec1ffff;
 static unsigned int dark_text = 0xe6edf3ff;
 static unsigned int dark_text_muted = 0xaab7c4ff;
+static const Color error_border_color = { 220, 53, 69, 255 };
+
+static void draw_textbox_error_border(Rectangle bounds)
+{
+    DrawRectangleLinesEx(bounds, 2.0f, error_border_color);
+}
+
+static bool textbox_has_visible_text(const Textbox *tb)
+{
+    return tb != NULL && tb->text != NULL && tb->text[0] != '\0';
+}
 
 static void ensure_raygui_style(void)
 {
@@ -56,7 +67,7 @@ void ui_set_dark_mode(bool enabled)
     style_dirty = true;
 }
 
-bool textbox_update(Textbox *tb, Rectangle bounds)
+bool textbox_update(Textbox *tb, Rectangle bounds, bool has_error)
 {
     if ((tb == NULL) || (tb->text == NULL)) return false;
 
@@ -67,6 +78,7 @@ bool textbox_update(Textbox *tb, Rectangle bounds)
     previous[TEXTBOX_MAX - 1] = '\0';
 
     if (GuiTextBox(bounds, tb->text, TEXTBOX_MAX, tb->active)) tb->active = !tb->active;
+    if (has_error) draw_textbox_error_border(bounds);
 
     tb->len = (int)strlen(tb->text);
     tb->cursor = tb->len;
@@ -74,12 +86,13 @@ bool textbox_update(Textbox *tb, Rectangle bounds)
     return strcmp(previous, tb->text) != 0;
 }
 
-void textbox_draw(const Textbox *tb, Rectangle b)
+void textbox_draw(const Textbox *tb, Rectangle b, bool has_error)
 {
     if ((tb == NULL) || (tb->text == NULL)) return;
 
     if (style_dirty) ensure_raygui_style();
     GuiTextBox(b, tb->text, TEXTBOX_MAX, false);
+    if (has_error) draw_textbox_error_border(b);
 }
 
 bool slider_update(Slider *s, Rectangle b)
@@ -133,7 +146,8 @@ FunctionPanelResult draw_functions_tbs(Function *f, int count, int padding)
 
         DrawRectangleRec(cb, f[i].color);
         DrawRectangleLinesEx(cb, 1, Fade(RAYWHITE, 0.25f));
-        if (textbox_update(&f[i].tb, b)) result.to_reparse = i;
+        bool has_parse_error = textbox_has_visible_text(&f[i].tb) && f[i].tokens == NULL;
+        if (textbox_update(&f[i].tb, b, has_parse_error)) result.to_reparse = i;
         result.any_textbox_active = result.any_textbox_active || f[i].tb.active;
 
         if (button(mb, "-")) result.to_remove = i;

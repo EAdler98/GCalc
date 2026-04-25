@@ -89,6 +89,49 @@ static void print_postfix(Token *tokens) {
     printf("\n");
 }
 
+static char *copy_with_closed_parentheses(const char *input) {
+    size_t input_len = strlen(input);
+    int open_parens = 0;
+
+    for (size_t i = 0; i < input_len; i++) {
+        if (input[i] == '(') {
+            open_parens++;
+        } else if (input[i] == ')' && open_parens > 0) {
+            open_parens--;
+        }
+    }
+
+    char *normalized = (char *)malloc(input_len + (size_t)open_parens + 1);
+    if (normalized == NULL) return NULL;
+
+    memcpy(normalized, input, input_len);
+    for (int i = 0; i < open_parens; i++) {
+        normalized[input_len + (size_t)i] = ')';
+    }
+    normalized[input_len + (size_t)open_parens] = '\0';
+    return normalized;
+}
+
+static bool postfix_has_valid_shape(Token *postfix) {
+    int stack_depth = 0;
+
+    for (int i = 0; postfix[i].type != TOKEN_EOF; i++) {
+        Token t = postfix[i];
+        if (t.type == TOKEN_NUMBER || t.type == TOKEN_VARIABLE) {
+            stack_depth++;
+        } else if (t.type == TOKEN_FUNCTION || (t.type == TOKEN_OPERATOR && t.symbol == 'n')) {
+            if (stack_depth < 1) return false;
+        } else if (t.type == TOKEN_OPERATOR) {
+            if (stack_depth < 2) return false;
+            stack_depth--;
+        } else {
+            return false;
+        }
+    }
+
+    return stack_depth == 1;
+}
+
 double evaluate_postfix(Token *postfix, double x_value) {
     double stack[256];
     int top = -1;
@@ -147,19 +190,34 @@ double evaluate_postfix(Token *postfix, double x_value) {
 }
 
 Token *parse(char *input) {
-    Token *infix = tokenizer(input);
+    char *normalized_input = copy_with_closed_parentheses(input);
+    if (normalized_input == NULL) {
+        return NULL;
+    }
+
+    Token *infix = tokenizer(normalized_input);
     if (infix == NULL) {
         printf("Error: tokenizer failed for: %s\n", input);
+        free(normalized_input);
         return NULL;
     }
     Token *postfix = infix_to_postfix(infix);
     if (postfix == NULL) {
         printf("Error: parser failed for: %s\n", input);
         free(infix);
+        free(normalized_input);
+        return NULL;
+    }
+    if (!postfix_has_valid_shape(postfix)) {
+        printf("Error: malformed expression: %s\n", input);
+        free(postfix);
+        free(infix);
+        free(normalized_input);
         return NULL;
     }
     printf("Postfix: ");
     print_postfix(postfix);
     free(infix);
+    free(normalized_input);
     return postfix;
 }

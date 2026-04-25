@@ -49,8 +49,8 @@ typedef enum {
 } IntersectMode;
 
 // Draws and updates a raygui textbox, returns true when the text content changes.
-bool textbox_update(Textbox *tb, Rectangle bounds);
-void textbox_draw(const Textbox *tb, Rectangle bounds);
+bool textbox_update(Textbox *tb, Rectangle bounds, bool has_error);
+void textbox_draw(const Textbox *tb, Rectangle bounds, bool has_error);
 
 // Returns true when value changes
 bool slider_update(Slider *s, Rectangle bounds);

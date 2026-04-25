@@ -97,6 +97,19 @@ static void assert_tokenizer_null(char *input, const char *test_name)
     printf("[PASSED] %s\n", test_name);
 }
 
+static void assert_parse_null(const char *expr, const char *test_name)
+{
+    Token *postfix = parse((char *)expr);
+    if (postfix != NULL)
+    {
+        printf("[FAILED] %s (parse should have returned NULL)\n", test_name);
+        free(postfix);
+        exit(1);
+    }
+
+    printf("[PASSED] %s\n", test_name);
+}
+
 static void assert_evaluate(const char *expr, double x, double expected, const char *test_name)
 {
     Token *postfix = parse((char *)expr);
@@ -259,14 +272,17 @@ int main(void)
 
     assert_evaluate("sqrt(9)", 0, 3.0, "Eval: sqrt(9)");
     assert_evaluate("sqrt(x+1)", 8, 3.0, "Eval: sqrt(x+1) at x=8");
+    assert_evaluate("(x+1", 3, 4.0, "Eval: auto-close trailing parenthesis");
+    assert_evaluate("sin(x", 1.5707963267948966, 1.0, "Eval: auto-close function parenthesis");
     assert_evaluate("log(1)", 0, 0.0, "Eval: log(1)");
     assert_evaluate("sin(0)", 0, 0.0, "Eval: sin(0)");
     assert_evaluate("cos(0)", 0, 1.0, "Eval: cos(0)");
     assert_evaluate("sin(x)", 1.5707963267948966, 1.0, "Eval: sin(x) at x=pi/2");
     assert_evaluate("cos(x)", 3.141592653589793, -1.0, "Eval: cos(x) at x=pi");
 
-    assert_evaluate("x^2 + 2*x - 3^", 2, NAN, "Eval: trailing operator -> NAN");
-    assert_evaluate("x +", 1, NAN, "Eval: dangling + -> NAN");
+    assert_parse_null("x^2 + 2*x - 3^", "Parse: trailing operator rejected");
+    assert_parse_null("x +", "Parse: dangling + rejected");
+    assert_parse_null("x^", "Parse: dangling power rejected");
     assert_evaluate("sqrt(-1)", 0, NAN, "Eval: sqrt negative -> NAN");
     assert_evaluate("log(0)", 0, NAN, "Eval: log zero -> NAN");
 
